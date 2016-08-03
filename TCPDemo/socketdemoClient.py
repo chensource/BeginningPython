@@ -1,13 +1,7 @@
 import socket
 
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-s.connect(('127.0.0.1', 9999))
-
-print(s.recv(1024).decode('utf-8'))
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 for data in [b'Michal', b'Tracy', b'Sarah']:
-    s.send(data)
+    s.sendto(data, ('127.0.0.1', 9999))
     print(s.recv(1024).decode('utf-8'))
-
-s.send(b'exit')
 s.close()

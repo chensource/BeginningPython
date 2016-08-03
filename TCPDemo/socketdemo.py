@@ -2,7 +2,7 @@ import socket
 import threading
 import time
 
-'抓取页面'
+'''抓取页面'''
 #创建一个socket TCP/IP 协议
 # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # s.connect(('bj.centanet.com', 80))
@@ -25,31 +25,42 @@ import time
 # with open('index_nj.html', 'wb') as f:
 #     f.write(html)
 
-'服务器监听端口'
-#创建一个基于TCP/IP 协议的 Socket
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# 监听端口
+# '服务器TCP监听端口'
+# #创建一个基于TCP/IP 协议的 Socket
+# s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# # 监听端口
+# s.bind(('127.0.0.1', 9999))
+#
+# #最大监听数量
+# s.listen(5)
+# print('Waiting for connection...')
+#
+#
+# def tcplink(sock, addr):
+#     print('Accept new connection from %s:%s..' % addr)
+#     sock.send(b'Welcome!')
+#     while True:
+#         data = sock.recv(1024)
+#         time.sleep(1)
+#         if not data or data.decode('utf-8') == 'exit':
+#             break
+#         sock.send(('hello,%s!' % data.decode('utf-8')).encode('utf-8'))
+#     sock.close()
+#     print('Connection from %s:%s closed!' % addr)
+#
+#
+# while True:
+#     sock, addr = s.accept()
+#     t = threading.Thread(target=tcplink, args=(sock, addr))
+#     t.start()
+
+#UDP 协议
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
 s.bind(('127.0.0.1', 9999))
 
-#最大监听数量
-s.listen(5)
-print('Waiting for connection...')
-
-
-def tcplink(sock, addr):
-    print('Accept new connection from %s:%s..' % addr)
-    sock.send(b'Welcome!')
-    while True:
-        data = sock.recv(1024)
-        time.sleep(1)
-        if not data or data.decode('utf-8') == 'exit':
-            break
-        sock.send(('hello,%s!' % data.decode('utf-8')).encode('utf-8'))
-    sock.close()
-    print('Connection from %s:%s closed!' % addr)
-
-
+print('Bind UDP on 999')
 while True:
-    sock, addr = s.accept()
-    t = threading.Thread(target=tcplink, args=(sock, addr))
-    t.start()
+    data, addr = s.recvfrom(1024)
+    print("Received from %s:%s" % addr)
+    s.sendto(b'hello, %s!' % data, addr)
