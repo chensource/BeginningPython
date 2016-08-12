@@ -1,14 +1,10 @@
 import logging
-logging.basicConfig(level=logging.INFO)
-
-import asyncio, os, json, time
-from datetime import datetime
-
+import asyncio
 from aiohttp import web
+logging.basicConfig(level=logging.INFO)
 
 
 def index(request):
-    # return web.Response(body=b'<h1>Awesome</h1>')
     return web.Response(body='你好'.encode(encoding='utf-8'),
                         headers={'Content-Type': 'text/html;charset=utf-8'})
 

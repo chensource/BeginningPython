@@ -1,10 +1,11 @@
 import logging
-logging.basicConfig(level=logging.INFO)
-
-import asyncio, os, json, time
+import asyncio
+import os
+import json
+import time
 from datetime import datetime
-
-from aiohttp import web
+from aiohttp import websocket
+logging.basicConfig(level=logging.INFO)
 
 
 @asyncio.coroutine
@@ -15,8 +16,8 @@ def create_pool(loop, **kw):
     __pool = yield from aiomysql.create_pool(
         host=kw.get('host', 'localhost'),
         port=kw.get('port', 3306),
-        user=kw['admin'],
-        password=kw['password'],
+        user=kw['sa'],
+        password=kw['P@ssw0rd'],
         db=kw['db'],
         charset=kw.get('charset', 'utf8'),
         autocommit=kw.get('autocommit', True),
@@ -77,15 +78,15 @@ class Model(dict, mataclass=ModelMataClass):
             if field default is not None:
                 value = field.default() if callable(field.default) else field.default
                 logging.debug('using default value for %s:%s' % (key,str(value)))
-                setattr(self, key,value)
+                setattr(self,key,value)
         return value
 
     @classmethod
     @asyncio.coroutine
-    def find(cls,pk):
+    def find(cls, pk):
         logging.info('find object by primary key')
         rs = yield from select('%s where `%s`=?',(cls.__select__.cls.__primary_key__).[pk],1)
-        if len(rs)==0
+        if len(rs) == 0
             return None
         return cls(**rs[0])
 
@@ -99,7 +100,7 @@ class Model(dict, mataclass=ModelMataClass):
 
 
 class Field(object):
-    def __init__(self,name,column_type,primary_key,default):
+    def __init__(self, name, column_type, primary_key, default):
         self.name = name
         self.column_type = column_type
         self.primary_key = primary_key
@@ -109,17 +110,17 @@ class Field(object):
         return '<%s,%s:%s>' %(self.__class__.__name__,self.column_type,self.name)
 
 class StringField(Field):
-    def __init__(self,name=None,primary_key=False,default=None,ddl='varchar(100)'):
+    def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
 class ModelMetaclass(type):
-    def __new__(cls,name,bases,attrs):
-        if name=='Model':
-            return type.__new__(cls,name,bases,attrs)
+    def __new__(cls, name, bases, attrs):
+        if name == 'Model':
+            return type.__new__(cls, name, bases, attrs)
 
         #获取Table 的名称
-        tableName = attrs.get('__table__',None) or name
-        logging.info('found model:%s (table:%s)' % (name,tableName))
+        tableName = attrs.get('__table__', None) or name
+        logging.info('found model:%s (table:%s)' % (name, tableName))
 
         mappings = dict()
         fields = []
