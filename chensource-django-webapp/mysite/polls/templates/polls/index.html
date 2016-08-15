@@ -6,8 +6,8 @@
     </li>
     {% endfor %}
 </ul>
-<% esle %>
-    <p>
-        No polls are available.
-    </p>
-    {% endif %}
+{% else %}
+<p>
+    No polls are available.
+</p>
+{% endif %}
