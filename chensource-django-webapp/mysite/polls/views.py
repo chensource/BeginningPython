@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.shortcuts import get_object_or_404, render
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -11,12 +12,17 @@ class IndexView(generic.ListView):
 
     def get_queryset(self):
         '''Return the last five id question'''
-        return Question.objects.order_by('id')[:5]
+        return Question.objects.filter(
+            pub_date__lte=timezone.now()).order_by('id')[:5]
 
 
 class DetailView(generic.DeleteView):
     model = Question
     template_name = 'polls/detail.html'
+
+    def get_queryset(self):
+        '''Excludes any questions that aren't publised yet'''
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
 
 class ResultsView(generic.DetailView):
@@ -67,6 +73,5 @@ def vote(request, question_id):
     else:
         select_choice.votes += 1
         select_choice.save()
-        return HttpResponseRedirect(
-            reverse(
-                'polls:results', args=(question.id, )))
+        return HttpResponseRedirect(reverse('polls:results',
+                                            args=(question.id, )))
