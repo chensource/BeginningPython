@@ -42,7 +42,13 @@ req.add_header(
     'https://passport.weibo.cn/signin/login?entry=mweibo&res=wel&wm=3349&r=http%3A%2F%2Fm.weibo.cn%2F')
 
 with request.urlopen(req, data=login_data.encode('utf-8')) as f:
-    print("Status: ", f.status, f.reason)
-    for key, value in f.getheaders():
-        print('%s:%s' % (key, value))
-    print('Data:', f.read().decode('utf-8'))
+    # print("Status: ", f.status, f.reason)
+    # for key, value in f.getheaders():
+    #     print('%s:%s' % (key, value))
+    # print('Data:', f.read().decode('utf-8'))
+    f.read().decode('utf-8')
+
+class RailLine(object):
+    def __init__(self,RailLineID,RailLineName):
+        self.RailLineID = RailLineID
+        self.RailLineName = RailLineName
