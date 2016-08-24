@@ -201,3 +201,29 @@ class Model(dict, metaclass=ModelMetaclass):
         rows = yield from execute(self.__insert__, args)
         if rows != 1:
             logging.warn('failed to insert record: affected rows: %s' % rows)
+
+    @asyncio.coroutine
+    def findAll(cls, where=None, args=None, **kw):
+        sql = [cls.__select__]
+        if where:
+            sql.append('where')
+            sql.append(where)
+        if args is None:
+            args = []
+        orderby = kw.get('orderby', None)
+        if orderby:
+            sql.append('order by ')
+            sql.append(orderby)
+        limit = kw.get('limit', None)
+        if limit is not None:
+            sql.append('limit')
+            if isinstance(limit, int):
+                sql.append('?')
+                args.append(limit)
+            elif isinstance(limit, tuple) and len(limit) == 2:
+                sql.append('?')
+                args.extend(limit)
+            else:
+                raise ValueError('Invalid limit value: %s' % str(limit))
+        rs = select(' '.join(sql), args)
+        return [cls(**r) for r in rs]
