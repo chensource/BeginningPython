@@ -1,10 +1,9 @@
 import logging
-import asyncio
-import json
-import os
-import time
-from aiohttp import web
+import asyncio, os, json, time
 from datetime import datetime
+
+from aiohttp import web
+from urllib import parse
 from jinja2 import Environment, FileSystemLoader
 
 import orm
@@ -12,13 +11,9 @@ from coroweb import add_routes, add_static
 
 logging.basicConfig(level=logging.INFO)
 
-# def index(request):
-#     return web.Response(body='你好'.encode(encoding='utf-8'),
-#                         headers={'Content-Type': 'text/html;charset=utf-8'})
-
 
 def init_jinja2(app, **kw):
-    logging.info('init jinja2....')
+    logging.info('init jinja2...')
     options = dict(autoescape=kw.get('autoescape', True),
                    block_start_string=kw.get('block_start_string', '{%'),
                    block_end_string=kw.get('block_end_string', '%}'),
@@ -26,7 +21,6 @@ def init_jinja2(app, **kw):
                    variable_end_string=kw.get('variable_end_string', '}}'),
                    auto_reload=kw.get('auto_reload', True))
     path = kw.get('path', None)
-    # logging.info('set jinja2 template path: %s' % path)
     if path is None:
         path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'templates')
@@ -36,41 +30,57 @@ def init_jinja2(app, **kw):
     if filters is not None:
         for name, f in filters.items():
             env.filters[name] = f
-        app['__templates__'] = env
+    app['__templating__'] = env
 
+# -------------------------工厂函数------------------------------------
+# 在每个响应之前打印日志
+async def logger_factory(app, handler):
 
-@asyncio.coroutine
-def logger_factory(app, handler):
-    def logger(request):
-        logging.info('Request: %s %s' % (request.method, request.path))
-        # await asyncio.sleep(0.3)
-        return handler(request)
+    async def logger(request):
+        logging.info('Response: %s %s' % (request.method, request.path))
+        return await handler(request)
 
     return logger
 
 
-@asyncio.coroutine
-def data_factory(app, handler):
-    def parse_data(request):
+async def data_factory(app, handler):
+
+    async def parse_data(request):
+        logging.info('data_factory...')
         if request.method == 'POST':
-            if request.content_type.startswith('application/json'):
-                request.__data__ = request.json()
-                logging.info('request json: %s' % str(request.__data__))
-            elif request.content_type.startswith(
-                    'application/x-www-form-urlencoded'):
-                request.__data__ = request.post()
-                logging.info('request form: %s' % str(request.__data__))
-        return handler(request)
+            if not request.content_type:
+                return web.HTTPBadRequest(text='Missing Content-Type.')
+            content_type = request.content_type.lower()
+            if content_type.startswith('application/json'):
+                request.__data__ = await request.json()
+                if not isinstance(request.__data__, dict):
+                    return web.HTTPBadRequest(text='JSON body must be object.')
+                logging.info('request json: %s' % request.__data__)
+            elif content_type.startswith(
+                ('application/x-www-form-urlencoded', 'multipart/form-data')):
+                params = await request.json()
+                request.__data__ = dict(**params)
+                logging.info('request form: %s' % request.__data__)
+            else:
+                return web.HTTPBadRequest(text='Unsupported Content-Type: %s' %
+                                          content_type)
+        elif request.method == 'GET':
+            qs = request.query_string
+            request.__data__ = {k: v[0] for k, v in parse.parse_qs(qs, True).items()}
+            logging.info('request query: %s' % request.__data__)
+        else:
+            request.__data__ = dict()
+        return await handler(request)
 
     return parse_data
 
+# 把任何返回值封装成浏览器可正确显示的Response对象
+async def response_factory(app, handler):
 
-@asyncio.coroutine
-def response_factory(app, handler):
-    def response(request):
+    async def response(request):
         logging.info('Response handler...')
-        r = handler(request)
-        logging.info(type(r))
+        r = await handler(request)
+        logging.info('Method request  -- done : %s' % request.method)
         if isinstance(r, web.StreamResponse):
             return r
         if isinstance(r, bytes):
@@ -92,18 +102,20 @@ def response_factory(app, handler):
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
+                # 如果用jinja2渲染，绑定已验证过的用户
+                r['__user__'] = request.__user__
                 resp = web.Response(
                     body=app['__templating__'].get_template(template).render(
                         **r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
-        if isinstance(r, int) and r >= 100 and r < 600:
-            return web.Response(r)
+        if isinstance(r, int) and 100 <= r < 600:
+            return web.Response(status=r)
         if isinstance(r, tuple) and len(r) == 2:
-            t, m = r
-            if isinstance(t, int) and t >= 100 and t < 600:
-                return web.Response(t, str(m))
-        # default:
+            status, message = r
+            if isinstance(status, int) and 100 <= status < 600:
+                return web.Response(status=status, text=str(message))
+        # default
         resp = web.Response(body=str(r).encode('utf-8'))
         resp.content_type = 'text/plain;charset=utf-8'
         return resp
@@ -125,24 +137,17 @@ def datetime_filter(t):
     return u'%s年%s月%s日' % (dt.year, dt.month, dt.day)
 
 
-@asyncio.coroutine
-def init(loop):
-    orm.create_pool(loop=loop,
-                    host='localhost',
-                    post=3306,
-                    user='sa',
-                    password='P@ssw0rd',
-                    db='awesome')
-    app = web.Application(loop=loop,
-                          middlewares=[
-                              logger_factory, response_factory
-                          ])
+async def init(loop):
+    await orm.create_pool(loop=loop,
+                               user='sa',
+                               password='P@ssw0rd',
+                               db='awesome')
+    app = web.Application(loop=loop, middlewares=[logger_factory, response_factory])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')
     add_static(app)
-    # app.router.add_route("GET", "/", index)
-    srv = yield from loop.create_server(app.make_handler(), '127.0.0.1', 9003)
-    logging.info('Server started at http://127.0.0.1:9003')
+    srv = await loop.create_server(app.make_handler(), '127.0.0.1', 9000)
+    logging.info('server started at http://127.0.0.1:9000...')
     return srv
 
 
