@@ -102,11 +102,11 @@ class RequestHandler(object):
         self._has_named_kw_args = has_named_kw_args(fn)
         self._named_kw_args = get_named_kw_args(fn)
         self._required_kw_args = get_required_kw_args(fn)
+
     logging.info('RequestHandler init .... ')
-    logging.info('object %s' % object)
+    logging.info('object %s' % str(object))
 
     async def __call__(self, request):
-        logging.info('RequestHandler Method request: %s' % request.method)
         kw = None
         if self._has_var_kw_arg or self._has_named_kw_args or self._required_kw_args:
             if request.method == 'POST':
@@ -118,14 +118,11 @@ class RequestHandler(object):
                     if not isinstance(params, dict):
                         return web.HTTPBadRequest('JSON body must be object.')
                     kw = params
-                elif ct.startswith(
-                        'application/x-www-form-urlencoded') or ct.startswith(
-                            'multipart/form-data'):
+                elif ct.startswith('application/x-www-form-urlencoded') or ct.startswith('multipart/form-data'):
                     params = await request.post()
                     kw = dict(**params)
                 else:
-                    return web.HTTPBadRequest('Unsupported Content-Type: %s' %
-                                              request.content_type)
+                    return web.HTTPBadRequest('Unsupported Content-Type: %s' % request.content_type)
             if request.method == 'GET':
                 qs = request.query_string
                 if qs:
@@ -145,8 +142,7 @@ class RequestHandler(object):
             # check named arg:
             for k, v in request.match_info.items():
                 if k in kw:
-                    logging.warning(
-                        'Duplicate arg name in named arg and kw args: %s' % k)
+                    logging.warning('Duplicate arg name in named arg and kw args: %s' % k)
                 kw[k] = v
         if self._has_request_arg:
             kw['request'] = request
@@ -156,7 +152,6 @@ class RequestHandler(object):
                 if name not in kw:
                     return web.HTTPBadRequest('Missing argument: %s' % name)
         logging.info('call with args: %s' % str(kw))
-
         try:
             r = await self._func(**kw)
             return r
@@ -173,11 +168,10 @@ def add_static(app):
 def add_route(app, fn):
     method = getattr(fn, '__method__', None)
     path = getattr(fn, '__route__', None)
-    logging.info('path: %s,method: %s' % (path,method))
+    logging.info('path:%s,method:%s' % (path,method))
     if path is None or method is None:
         raise ValueError('@get or @post not defined in %s.' % str(fn))
-    if not asyncio.iscoroutinefunction(fn) and not inspect.isgeneratorfunction(
-            fn):
+    if not asyncio.iscoroutinefunction(fn) and not inspect.isgeneratorfunction(fn):
         fn = asyncio.coroutine(fn)
     logging.info('add route %s %s => %s(%s)' %
                  (method, path, fn.__name__,
