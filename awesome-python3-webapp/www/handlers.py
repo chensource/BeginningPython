@@ -7,16 +7,41 @@ import base64
 import asyncio
 
 from coroweb import get, post
-from apis import APIValueError, APIResourceNotFoundError, APIError
+from apis import APIValueError, APIResourceNotFoundError, APIError, APIPermissionError
 from models import User, Comment, Blog, next_id
 from aiohttp import web
 from config import configs
+
+import markdown2
 
 _RE_EMAIL = re.compile(
     r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$')
 _RE_SHA1 = re.compile(r'^[0-9a-f]{40}$')
 COOKIE_NAME = 'awesession'
 _COOKIE_KEY = configs.session.secret
+
+
+def check_admin(request):
+    if request.__user__ is None or not request.__user__.admin:
+        raise APIPermissionError("user is not admin")
+
+
+def get_page_index(page_str):
+    p = 1
+    try:
+        p = int(page_str)
+    except Exception as e:
+        pass
+    if p < 1:
+        p = 1
+    return p
+
+
+def text2html(text):
+    lines = map(
+        lambda s: '<p>%s</p>' % s.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;'),
+        filter(lambda s: s.strip() != '', text.split('\n')))
+    return ''.join(lines)
 
 
 def user2cookie(user, max_age):
@@ -62,12 +87,13 @@ async def authenticate(*, email, passwd):
         raise APIValueError('email', 'Email not exist')
 
     user = users[0]
+    # logging.info('user.passwd : %s , user.email: %s' % (user.passwd,user.email))
+    # sha1 = hashlib.sha1()
 
-    sha1 = hashlib.sha1()
-    sha1.update(user.id.encode('utf-8'))
-    sha1.update(b':')
-    sha1.update(passwd.encode('utf-8'))
-    if user.passwd != sha1.hexdigest():
+    # sha1.update(user.email.encode('utf-8'))
+    # sha1.update(b':')
+    # sha1.update(passwd.encode('utf-8'))
+    if user.passwd != passwd:
         raise APIValueError('password', 'Invalid password')
 
     r = web.Response()
@@ -77,6 +103,7 @@ async def authenticate(*, email, passwd):
                  httponly=True)
     user.passwd = '******'
     r.content_type = 'application/json'
+    # 序列化用户信息
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
 
@@ -109,9 +136,33 @@ def index(request):
     return {'__template__': 'blogs.html', 'blogs': blogs}
 
 
+@get('/blog/{id}')
+async def get_blog(id):
+    blog = await Blog.find(id)
+    comments = await Comment.findAll('blog_id=?', [id], orderBy='created_at')
+    for c in comments:
+        c.html_content = text2html(c.content)
+    blog.html_content = markdown2.markdown(blog.content)
+    return {'__template__': 'blog.html', 'blog': blog, 'comments': comments}
+
+
+@get('/manage/blogs/create')
+def manage_create_blog():
+    return {
+        '__template__': 'manage_blog_edit.html',
+        'id': '',
+        'action': '/api/blogs'
+    }
+
+
 @get('/register')
 def register():
     return {'__template__': 'register.html'}
+
+
+@get('/signin')
+def signig():
+    return {'__template__': 'signin.html'}
 
 
 @get('/api/users')
@@ -136,8 +187,9 @@ async def api_register_user(*, email, name, passwd):
         raise APIError('register failed', 'email', 'Email is already in use')
 
     uid = next_id()
-    sha1_passwd = '%s:%s' % (uid, passwd)
-    passwd = hashlib.sha1(sha1_passwd.encode('utf-8')).hexdigest()
+    # sha1_passwd = '%s:%s' % (uid, passwd)
+    logging.info(passwd)
+    passwd = passwd
     image = 'http://www.gravatar.com/avatar/%s?d=mm&s=120' % hashlib.md5(
         email.encode('utf-8')).hexdigest()
     user = User(uid=uid,
@@ -156,3 +208,29 @@ async def api_register_user(*, email, name, passwd):
     r.content_type = 'application/json'
     r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
     return r
+
+
+@get('/api/blogs/{id}')
+async def api_get_blog(*, id):
+    blog = await Blog.find(id)
+    return blog
+
+
+@post('/api/blogs')
+async def api_create_blog(request, *, name, summary, content):
+    check_admin(request)
+    if not name or name.strip():
+        raise APIValueError('name', 'name cannot be empty')
+    if not summary or summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty')
+    if not content or content.strip():
+        raise APIValueError('content', 'content cannot be empty')
+    user = request.__user__
+    blog = Blog(user_id=user.id,
+                user_name=user.name,
+                user_image=user.image,
+                name=name.strip(),
+                summary=summary.strip(),
+                content=content.strip())
+    await blog.save()
+    return blog

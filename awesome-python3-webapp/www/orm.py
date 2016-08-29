@@ -9,54 +9,60 @@ from aiohttp import websocket
 logging.basicConfig(level=logging.INFO)
 
 
-@asyncio.coroutine
-def create_pool(loop, **kw):
+async def create_pool(loop, **kw):
     logging.info('create database connection pool...')
 
     global __pool
-    __pool = yield from aiomysql.create_pool(
-        host=kw.get('host', 'localhost'),
-        port=kw.get('port', 3306),
-        user=kw['user'],
-        password=kw['password'],
-        db=kw['db'],
-        charset=kw.get('charset', 'utf8'),
-        autocommit=kw.get('autocommit', True),
-        maxsize=kw.get('maxsize', 10),
-        minsize=kw.get('minsize', 1),
-        loop=loop)
+    __pool = await aiomysql.create_pool(host=kw.get('host', 'localhost'),
+                                        port=kw.get('port', 3306),
+                                        user=kw['user'],
+                                        password=kw['password'],
+                                        db=kw['db'],
+                                        charset=kw.get('charset', 'utf8'),
+                                        autocommit=kw.get('autocommit', True),
+                                        maxsize=kw.get('maxsize', 10),
+                                        minsize=kw.get('minsize', 1),
+                                        loop=loop)
 
 
 def log(sql, args=()):
     logging.info('SQL: %s' % sql)
 
 
-@asyncio.coroutine
-def select(sql, args, size=None):
+async def select(sql, args, size=None):
     log(sql, args)
-    global __pool
-    with (yield from __pool) as conn:
-        cur = yield from conn.cursor(aiomysql.DictCursor)
-        yield from cur.execute(sql.replace('?', '%s'), args or ())
-        if size:
-            rs = yield from cur.fetchmany(size)
-        else:
-            rs = yield from cur.fetchall()
-        yield from cur.close()
-        logging.info('rows returned %s' % len(rs))
-        return rs
+    async with __pool.get() as conn:
+        # 等待连接对象返回DictCursor可以通过dict的方式获取数据库对象，需要通过游标对象执行SQL
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(
+                sql.replace('?', '%s'),
+                args)  #将sql中的'?'替换为'%s'，因为mysql语句中的占位符为%s
+            #如果传入size'
+            if size:
+                resultset = await cur.fetchmany(size)  # 从数据库获取指定的行数
+            else:
+                resultset = await cur.fetchall()  # 返回所有的结果集
+        logging.info('rows returned: %s' % len(resultset))
+        return resultset
 
 
-def execute(sql, args):
-    log(sql)
-    with (yield from __pool) as conn:
+async def execute(sql, args, autocommit=True):
+    log(sql, args)
+    async with __pool.get() as conn:
+        if not autocommit:  # 若数据库的事务为非自动提交的,则调用协程启动连接
+            await conn.begin()
         try:
-            cur = yield from conn.cursor()
-            yield from cur.execute(sql.replace('?', '%s'), args)
-            affected = cur.rowcount
-            yield from cur.close()
-        except Exception as e:
-            raise
+            async with conn.cursor(
+                aiomysql.
+                DictCursor) as cur:  # 打开一个DictCursor,它与普通游标的不同在于,以dict形式返回结果
+                await cur.execute(sql.replace('?', '%s'), args)
+                affected = cur.rowcount  # 返回受影响的行数
+            if not autocommit:  # 同上, 事务非自动提交型的,手动调用协程提交增删改事务
+                await conn.commit()
+        except BaseException as e:
+            if not autocommit:  # 出错, 回滚事务到增删改之前
+                await conn.rollback()
+            raise e
         return affected
 
 
@@ -163,7 +169,7 @@ class Model(dict, metaclass=ModelMetaclass):
         try:
             return self[key]
         except KeyError:
-            raise AttributeError(r'Model object has no attribute %s' % key)
+            raise AttributeError(r"'Model' object has no attribute '%s'" % key)
 
     def __setattr__(self, key, value):
         self[key] = value
@@ -175,36 +181,38 @@ class Model(dict, metaclass=ModelMetaclass):
         value = getattr(self, key, None)
         if value is None:
             field = self.__mappings__[key]
+            logging.info("key:%s, default value:%s" % (key, field.default))
             if field.default is not None:
                 value = field.default() if callable(
                     field.default) else field.default
-                logging.debug('using default value for %s:%s' %
+                logging.debug('using default value for %s: %s' %
                               (key, str(value)))
                 setattr(self, key, value)
         return value
 
     @classmethod
-    @asyncio.coroutine
-    def find(cls, pk):
+    async def find(cls, pk):
         logging.info('find object by primary key')
-        rs = yield from select('%s where `%s`=?',
-                               (cls.__select__, cls.__primary_key__), [pk], 1)
+        rs = await select('%s where `%s`=?' %
+                          (cls.__select__, cls.__primary_key__), [pk], 1)
         if len(rs) == 0:
             return None
         return cls(**rs[0])
 
-    @asyncio.coroutine
-    def save(self):
+    async def save(self):
         args = list(map(self.getValueOrDefault, self.__fields__))
         args.append(self.getValueOrDefault(self.__primary_key__))
         logging.info(args)
-        rows = yield from execute(self.__insert__, args)
+        rows = await execute(self.__insert__, args)
         if rows != 1:
             logging.warn('failed to insert record: affected rows: %s' % rows)
 
-    @asyncio.coroutine
-    def findAll(cls, where=None, args=None, **kw):
+    @classmethod
+    async def findAll(cls, where=None, args=None, **kw):
+        ' find objects by where clause. '
         sql = [cls.__select__]
+        # logging.info(cls.__select__)
+        logging.info(select(' '.join(sql), args))
         if where:
             sql.append('where')
             sql.append(where)
@@ -225,5 +233,5 @@ class Model(dict, metaclass=ModelMetaclass):
                 args.extend(limit)
             else:
                 raise ValueError('Invalid limit value: %s' % str(limit))
-        rs = select(' '.join(sql), args)
+        rs = await select(' '.join(sql), args)
         return [cls(**r) for r in rs]
