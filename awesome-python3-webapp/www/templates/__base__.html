@@ -1,6 +1,22 @@
 <!DOCTYPE html>
+<!--
+{% macro pagination(url, page) %}
+    <ul class="uk-pagination">
+        {% if page.has_previous %}
+            <li><a href="{{ url }}{{ page.page_index - 1 }}"><i class="uk-icon-angle-double-left"></i></a></li>
+        {% else %}
+            <li class="uk-disabled"><span><i class="uk-icon-angle-double-left"></i></span></li>
+        {% endif %}
+            <li class="uk-active"><span>{{ page.page_index }}</span></li>
+        {% if page.has_next %}
+            <li><a href="{{ url }}{{ page.page_index + 1 }}"><i class="uk-icon-angle-double-right"></i></a></li>
+        {% else %}
+            <li class="uk-disabled"><span><i class="uk-icon-angle-double-right"></i></span></li>
+        {% endif %}
+    </ul>
+{% endmacro %}
+-->
 <html>
-
 <head>
     <meta charset="utf-8">
     {% block meta %}
@@ -26,16 +42,16 @@
         <div class="uk-container uk-container-center">
             <a href="" class="uk-navbar-brand">Awesome</a>
             <ul class="uk-navbar-nav">
-                <li data-url="blogs"><a target="_blank" href="/"><i class="uk-icon-home">日志</i></a></li>
-                <li><a target="_blank" href="/"><i class="uk-icon-book">教程</i></a></li>
-                <li><a target="_blank" href="/"><i class="uk-icon-code">源码</i></a></li>
+                <li data-url="blogs"><a href="/"><i class="uk-icon-home">日志</i></a></li>
+                {# <li><a target="_blank" href="/"><i class="uk-icon-book">教程</i></a></li>
+                <li><a target="_blank" href="/"><i class="uk-icon-code">源码</i></a></li>#}
             </ul>
             <div class="uk-navbar-flip">
                 <ul class="uk-navbar-nav">
-                    {% if user %}
+                    {% if __user__ %}
                     <li class="uk-parent" data-uk-dropdown>
                         <a href="#0"><i class="uk-icon-user"></i>
-                            {{ user.name }}
+                            {{ __user__.name }}
                         </a>
                         <div class="uk-dropdown uk-dropdowm-navbar">
                             <ul class="uk-nav uk-nav-navbar">
@@ -67,7 +83,7 @@
                     <a href="#" target="_blank" class="uk-icon-button uk-icon-linkedin-square"></a>
                     <a href="#" target="_blank" class="uk-icon-button uk-icon-twitter"></a>
                 </p>
-                <p>Powered by <a href="#">Awesome Python WebApp</a>.Copyright.&copy;2016 [<a href="/marge/" target="_blank">Mange</a>]</p>
+                <p>Powered by <a href="#">Awesome Python WebApp</a>.Copyright.&copy;2016 [<a href="/manage/" target="_blank">Manage</a>]</p>
                 <a href="#" taget="_blank"><i class="uk-icon-html5" style="font-size: 64px;color: #444;"></i></a>
             </div>
         </div>

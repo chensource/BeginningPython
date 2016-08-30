@@ -1,26 +1,21 @@
 {% extends "__base__.html" %} {% block title %} 编辑日志 {% endblock %} {% block beforehead %}
 <script type="text/javascript">
     var id = '{{id}}',
-        action = '{{action}}'
+        action = '{{action}}';
 
     function initVM(blog) {
-        var vm = new Vue({
+        vm = new Vue({
             el: '#vm',
             data: blog,
             methods: {
                 submit: function(event) {
                     event.preventDefault();
-                    console.log(this.name.trim());
                     var $form = $("#vm").find('form');
-                    $form.postJSON(action, {
-                        name: this.name.trim(),
-                        summary: this.summary.trim(),
-                        content: this.content.trim()
-                    }, function(err, r) {
+                    $form.postJSON(action, this.$data, function(err, r) {
                         if (err) {
                             $form.showFormError(err);
                         } else {
-                            return location.assign('/api/blogs/' + r.id);
+                            return location.assign('/manage/blogs');
                         }
                     })
                 }
@@ -31,7 +26,7 @@
 
     $(function() {
         if (id) {
-            getJSON('/api/blogs' + id, function(err, blog) {
+            getJSON('/api/blogs/' + id, function(err, blog) {
                 if (err) {
                     return fatal(err);
                 }
@@ -72,7 +67,7 @@
         <div class="uk-form-row">
             <label class="uk-form-label">标题:</label>
             <div class="uk-form-controls">
-                <input v-model="name" name="name" type="text" placeholder="标题" class="uk-width-1-1">
+                <input v-model="name" type="text" placeholder="标题" class="uk-width-1-1">
             </div>
         </div>
         <div class="uk-form-row">
