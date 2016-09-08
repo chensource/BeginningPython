@@ -77,14 +77,15 @@ async def cookie2user(cookie_str):
 
 @get('/')
 async def index(*, page='1'):
+    logging.info('page:%s' % page)
     page_index = get_page_index(page)
     num = await Blog.findNumber('count(id)')
-    page = Page(num)
-    # logging.info('page.offset:%s,page.limit:%s' % (page.offset,page.limit))
+    page = Page(num, page_index)
+    logging.info('page.offset:%s,page.limit:%s' % (page.offset, page.limit))
     if num == 0:
         blogs = []
     else:
-        blogs = await Blog.findAll(orderBy='created_at desc',
+        blogs = await Blog.findAll(orderby='created_at desc',
                                    limit=(page.offset, page.limit))
     return {'__template__': 'blogs.html', 'page': page, 'blogs': blogs}
 
@@ -92,7 +93,7 @@ async def index(*, page='1'):
 @get('/blog/{id}')
 async def get_blog(id):
     blog = await Blog.find(id)
-    comments = await Comment.findAll('blog_id=?', [id], orderBy='created_at')
+    comments = await Comment.findAll('blog_id=?', [id], orderby='created_at')
     for c in comments:
         c.html_content = text2html(c.content)
     blog.html_content = markdown2.markdown(blog.content)
@@ -158,7 +159,7 @@ def manage_comments(*, page='1'):
 
 @get('/api/users')
 async def api_get_users():
-    users = await User.findAll(orderBy='created_at desc')
+    users = await User.findAll(orderby='created_at desc')
     for u in users:
         u.passwd = '******'
     return dict(users=users)
@@ -256,7 +257,7 @@ async def api_blogs(*, page='1'):
     p = Page(num, page_index)
     if num == 0:
         return dict(page=p, blogs=())
-    blogs = await Blog.findAll(orderBy='created_at desc',
+    blogs = await Blog.findAll(orderby='created_at desc',
                                limit=(p.offset, p.limit))
     return dict(page=p, blogs=blogs)
 

@@ -24,11 +24,11 @@ def init_jinja2(app, **kw):
                    variable_start_string=kw.get('variable_start_string', '{{'),
                    variable_end_string=kw.get('variable_end_string', '}}'),
                    auto_reload=kw.get('auto_reload', True))
-    path = kw.get('path', None) 
+    path = kw.get('path', None)
     if path is None:
         path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'templates')
-    logging.info('set jinja2 template path: %s' % path) 
+    logging.info('set jinja2 template path: %s' % path)
     env = Environment(loader=FileSystemLoader(path), **options)
     filters = kw.get('filters', None)
     if filters is not None:
@@ -50,6 +50,7 @@ async def logger_factory(app, handler):
 
 
 async def auth_factory(app, handler):
+
     async def auth(request):
         logging.info('check user: %s %s' % (request.method, request.path))
         request.__user__ = None
@@ -60,9 +61,11 @@ async def auth_factory(app, handler):
                 logging.info('set current user: %s' % user.email)
                 request.__user__ = user
 
-        if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+        if request.path.startswith('/manage/') and (
+                request.__user__ is None or not request.__user__.admin):
             return web.HTTPFound('/signin')
         return await handler(request)
+
     return auth
 
 
