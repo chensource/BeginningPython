@@ -1,0 +1,42 @@
+﻿Merge remote-tracking branch 'origin/master'
+
+# Conflicts:
+#	.gitignore
+#
+# It looks like you may be committing a merge.
+# If this is not correct, please remove the file
+#	.git/MERGE_HEAD
+# and try again.
+
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# On branch master
+# Your branch and 'origin/master' have diverged,
+# and have 1 and 4 different commits each, respectively.
+#   (use "git pull" to merge the remote branch into yours)
+#
+# All conflicts fixed but you are still merging.
+#
+# Changes to be committed:
+#	modified:   .gitignore
+#	deleted:    PyWebByPytv/.vs/PyWebByPytv/v14/.suo
+#	deleted:    awesome-python3-webapp/www/__pycache__/coroweb.cpython-35.pyc
+#	deleted:    awesome-python3-webapp/www/__pycache__/handlers.cpython-35.pyc
+#	deleted:    awesome-python3-webapp/www/__pycache__/models.cpython-35.pyc
+#	deleted:    awesome-python3-webapp/www/__pycache__/orm.cpython-35.pyc
+#	new file:   awesome-python3-webapp/www/apis.py
+#	modified:   awesome-python3-webapp/www/app.py
+#	modified:   awesome-python3-webapp/www/coroweb.py
+#	modified:   awesome-python3-webapp/www/handlers.py
+#	new file:   awesome-python3-webapp/www/static/css/awesome.css
+#	deleted:    awesome-python3-webapp/www/static/css/uikit.gradient.css
+#	new file:   awesome-python3-webapp/www/static/js/awesome.js
+#	new file:   awesome-python3-webapp/www/static/js/html5.js
+#	new file:   awesome-python3-webapp/www/static/js/md5.js
+#	new file:   awesome-python3-webapp/www/static/js/vue.min.js
+#	modified:   awesome-python3-webapp/www/templates/__base__.html
+#	modified:   awesome-python3-webapp/www/test.py
+#	new file:   py_spider/pyspider.txt
+#
+

@@ -45,7 +45,11 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+<<<<<<< HEAD
 awesome-python3-webapp/www/coroweb.py
 *.py
 awesome-python3-webapp/www/coroweb.py
 *.py
+=======
+*.pyc
+>>>>>>> origin/master
