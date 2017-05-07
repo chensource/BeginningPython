@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+# Created on 2017-05-04 11:43:03
+# Project: NewHouseByFang_WH
+
+from pyspider.libs.base_handler import *
+from pyspider.database.mysql.mysqldb import SQL
+import re
+
+
+class Handler(BaseHandler):
+    crawl_config = { 
+      'itag':'v232'   
+    }
+    
+    def __init__(self):
+       self.base_url = 'http://newhouse.wuhan.fang.com/house/s/b9' 
+       self.page_num = 1
+       self.total_num = 35
+    
+    @every(minutes=1 * 1)
+    def on_start(self):
+       while self.page_num <= self.total_num:
+           url = self.base_url + str(self.page_num) + "/"
+           self.crawl(url, callback=self.list_page)
+           self.page_num += 1
+    
+    @config(age=10 * 1 * 1 * 1)
+    def list_page(self, response):
+        for each in response.doc('div > .clearfix a[href^="http"]').items():
+           if re.match("http://\w+.fang.com/$", each.attr.href, re.U):
+               self.crawl(each.attr.href, callback=self.detail_page)
+
+    @config(priority=2)
+    def detail_page(self, response):
+       url = response.doc('.navleft a:contains("'+u'Â¥ÅÌÏêÇé'+'")').attr.href
+       self.crawl(url, callback=self.detail_page_detail_info)
+       
+    
+    @config(priority=2)
+    def detail_page_detail_info(self,response):
+        adname = response.doc(".lpbt a").text()
+        price = response.doc('.main-info-price em').text()
+        lis = response.doc('.list-right')
+        esttype = lis.eq(0).text()
+        Features = lis.eq(1).find('span').eq(0).text()
+        BuildingTypes = lis.eq(1).find('span').eq(1).text()
+        Fitment = lis.eq(3).text()
+        PropertyRight  = lis.eq(4).text()
+        RoodName = lis.eq(5).text()
+        Developer = response.doc('.list-right-text a').eq(0).text()
+        Address =  response.doc('.list-right-text').eq(1).text()
+        Status = lis.eq(6).text()
+        OpenTime = lis.eq(8).text()
+        LiveTime = lis.eq(9).text()
+        SalesOffice = lis.eq(10).text()
+        PreSalePermit = response.doc('div.table-part:eq(0)>table>tr:eq(1)>td:eq(0)').text()
+        Traffic = response.doc("div.set:eq(0) p").text()
+        ProjectSupporting = response.doc("div.set:eq(1) p").text()
+        ProjectIntroduction = response.doc(".intro").text()
+        return {
+            "AdName":adname,
+            "Price":price,
+            "EstType":esttype,
+            "Features":Features,
+            "BuildingTypes":BuildingTypes,
+            "Fitment":Fitment,
+            "PropertyRight":PropertyRight,
+            "RoodName":RoodName,
+            "Developer":Developer,
+            "Address":Address,
+            "Status":Status,
+            "OpenTime":OpenTime,
+            "LiveTime":LiveTime,
+            "SalesOffice":SalesOffice,
+            "PreSalePermit":PreSalePermit,
+            "Traffic":Traffic,
+            "ProjectSupporting":ProjectSupporting,
+            "ProjectIntroduction":ProjectIntroduction
+        }
+    
+    def on_result(self, result):
+        print result
+        if result is None:
+            return
+        sql = SQL()
+        sql.replace('Newprops',**result)
+    
+    
+    
+    
