@@ -13,14 +13,13 @@ class FangInfoSpider(scrapy.Spider):
         # 东湖高新，洪山，江岸，
         # 东西湖，汉阳，武昌，江汉，经济开发，硚口，黄陂，江夏，青山，蔡甸，新洲，汉南，其他
         'donghugaoxin1',
-        'honshan1',
+        'hongshan1',
         'jiangan1',
         'dongxihu1',
         'hanyang1',
         'wuchang1',
         'jianghan1',
-        'jingjikaifaqu'
-        'hanyang',
+        'jingjikaifaqu',
         'qiaokou2',
         'huangpi2',
         'jiangxia2',
@@ -32,10 +31,10 @@ class FangInfoSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
-        # for district in self.district_list:
-        #     url = self.xinfang_list_url + district + "/b91/"
-        url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/b91/'
-        yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
+        for district in self.district_list:
+            url = self.xinfang_list_url + district + "/b91/"
+            # url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/b91/'
+            yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
 
     def parse_xinfang_list(self, response):
         req = response.request

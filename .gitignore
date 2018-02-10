@@ -47,3 +47,4 @@ Temporary Items
 .apdisk
 *.pyc
 *.jpg
+spider/fang_scrapy/fang_link/fang.json
