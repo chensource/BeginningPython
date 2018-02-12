@@ -18,12 +18,12 @@ class ShupingSpider(scrapy.Spider):
         for r in response.xpath('//*[@id="content"]/div'):
             item = YswItem()
             # 发帖时间
-            item['time'] = r.xpath(
-                'string(./div/div/div[1]/div/span[2])').extract_first().strip()
+            item['time'] = r.xpath('string(./div/div/div[1]/div/span[2])'
+                                   ).extract_first().strip()
 
             # 获得赞同数
-            agree = r.xpath(
-                'string(./div/div/div[2]/button[1]/span)').extract_first().strip()
+            agree = r.xpath('string(./div/div/div[2]/button[1]/span)'
+                            ).extract_first().strip()
             if agree:
                 item['agree'] = agree
             else:
@@ -31,11 +31,13 @@ class ShupingSpider(scrapy.Spider):
 
             # 一级书评内容
             item['fir_text'] = r.xpath(
-                'string(./div/div/p)').extract_first().replace('\r\n', '').replace(' ', '')
+                'string(./div/div/p)').extract_first().replace('\r\n',
+                                                               '').replace(
+                                                                   ' ', '')
 
             # 二级评论数：
-            sec_num = r.xpath(
-                'string(./div/div/div[2]/button[2]/span)').extract_first().strip()
+            sec_num = r.xpath('string(./div/div/div[2]/button[2]/span)'
+                              ).extract_first().strip()
             if sec_num:
                 item['sec_num'] = sec_num
 
@@ -48,7 +50,11 @@ class ShupingSpider(scrapy.Spider):
 
                 # 将每一个一级书评下的所有二级书评的获取都交给sp_two.parse
                 sec_text_list = []
-                yield Request(sec_text_url, meta={'sec_text_list': sec_text_list, 'item': item}, callback=self.parse_shuping_two)
+                yield Request(
+                    sec_text_url,
+                    meta={'sec_text_list': sec_text_list,
+                          'item': item},
+                    callback=self.parse_shuping_two)
             else:
                 item['sec_num'] = '0'
                 yield item
@@ -66,14 +72,13 @@ class ShupingSpider(scrapy.Spider):
         sec_text_list = response.meta['sec_text_list']
         # 获得shuping.parse()传来的item
         item = response.meta['item']
-
         '''每一页的二级评论内容放在一个列表result中，这个列表又放在列表sec_text_list中
         二级书评每一页的第一个书评都是它的一级书评内容，所以从每一页新的二级书评从第二个算起'''
         sec_text_list.extend(result[1:])
 
         # 判断二级评论是否还有下一页
-        nextpage = Selector(text=html).xpath(
-            '//a[text()="更多回复"]/@onclick').extract_first()
+        nextpage = Selector(
+            text=html).xpath('//a[text()="更多回复"]/@onclick').extract_first()
         if nextpage:
             # 获得下一页的cid
             cid = re.search(r"(.*?)'(.*?)',(.*)", nextpage).group(2)
@@ -84,7 +89,11 @@ class ShupingSpider(scrapy.Spider):
                 cid, t)
             # print('next_page_url')
             # 迭代这个方法继续获得下一页的二级评论内容
-            yield Request(next_page_url, meta={'sec_text_list': sec_text_list, 'item': item}, callback=self.parse_shuping_two)
+            yield Request(
+                next_page_url,
+                meta={'sec_text_list': sec_text_list,
+                      'item': item},
+                callback=self.parse_shuping_two)
         else:
 
             items['sec_text'] = sec_text_list
