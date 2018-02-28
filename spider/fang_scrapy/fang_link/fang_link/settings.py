@@ -11,6 +11,9 @@
 
 BOT_NAME = 'fang_link'
 
+MONGO_URI = 'localhost'
+MONGO_DB = 'FangLink'
+
 SPIDER_MODULES = ['fang_link.spiders']
 NEWSPIDER_MODULE = 'fang_link.spiders'
 
@@ -22,18 +25,20 @@ NEWSPIDER_MODULE = 'fang_link.spiders'
 ROBOTSTXT_OBEY = False
 
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
-CONCURRENT_REQUESTS = 16
+CONCURRENT_REQUESTS = 3
 
 # Configure a delay for requests for the same website (default: 0)
 # See https://doc.scrapy.org/en/latest/topics/settings.html#download-delay
 # See also autothrottle settings and docs
-DOWNLOAD_DELAY = 1.5
+DOWNLOAD_DELAY = 2
 # The download delay setting will honor only one of:
 #CONCURRENT_REQUESTS_PER_DOMAIN = 16
 #CONCURRENT_REQUESTS_PER_IP = 16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED = False
+COOKIES_ENABLED = True
+
+RANDOMIZE_DOWNLOAD_DELAY = True
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED = False
@@ -46,16 +51,14 @@ DEFAULT_REQUEST_HEADERS = {
 # Enable or disable spider middlewares
 # See https://doc.scrapy.org/en/latest/topics/spider-middleware.html
 SPIDER_MIDDLEWARES = {
-
-
     # 'fang_link.middlewares.FangLinkSpiderMiddleware': 543,
-
 }
 
 # Enable or disable downloader middlewares
 # See https://doc.scrapy.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     'scrapy.downloadermiddleware.useragent.UserAgentMiddleware': None,
+    # 'fang_link.proxymiddlewares.ProxyMiddleware': 100,
     'fang_link.useragent.UserAgent': 300
     # 'fang_link.middlewares.FangLinkDownloaderMiddleware': 543,
 }
@@ -68,9 +71,9 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'fang_link.pipelines.FangLinkPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'fang_link.pipelines.MongoPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

@@ -9,12 +9,12 @@ from scrapy import Item, Field
 
 
 class fang_list_item(Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
     # 实体类型
-    item_type = 'list'
+    item_type = Field()
+    # 房源编号
+    newcode = Field()
     # 唯一标识 [url]
-    fang_url = Field()
+    item_url = Field()
     # 楼盘名称
     ad_name = Field()
     # 楼盘地址
@@ -36,9 +36,10 @@ class fang_list_item(Item):
 
 
 class fang_detail_item(Item):
-    item_type = 'detail'
+    # 实体类型&表名
+    item_type = Field()
     # 唯一标识
-    fang_url = Field()
+    item_url = Field()
     # 房源详情页地址
     house_detail_url = Field()
     # 房源相册地址
@@ -49,27 +50,6 @@ class fang_detail_item(Item):
     house_type_url = Field()
     # 房价
     house_price_url = Field()
-    # # 主力户型
-    # main_house_type_str = Field()
-
-    # house_type_detail
-    # 户型名称
-    house_type_name = Field()
-    # 户型地址
-    house_type_url = Field()
-    # 室
-    house_type_room_cnt = Field()
-    # 厅
-    house_type_hall_cnt = Field()
-    # 厨
-    house_type_kitchen_cnt = Field()
-    # 卫
-    house_type_toilet_cnt = Field()
-    # 面积
-    house_type_size = Field()
-    # 描述
-    house_type_desc = Field()
-
     # 图片链接
     img_list = Field()
     # 房源标签
@@ -77,14 +57,28 @@ class fang_detail_item(Item):
 
 
 class house_detail_item(Item):
+    # 房源编号
+    newcode = Field()
+    # 实体类型
+    item_type = Field()
+    # 页面连接
+    item_url = Field()
+    # 楼盘名
+    house_adname = Field()
     # 建筑类别
-    build_category = Field()
+    building_type = Field()
+    # 项目特色
+    building_features = Field()
     # 装修情况
     decoration = Field()
     # 产权年限
     property_years = Field()
+    # 环线位置
+    loop_location = Field()
     #  开发商
     developer = Field()
+    # 销售状态
+    sales_status = Field()
     # 开盘时间
     opening_time = Field()
     # 交房时间
@@ -135,3 +129,73 @@ class house_detail_item(Item):
     price_description = Field()
     # 项目简介
     project_description = Field()
+
+
+class house_info_item(Item):
+    '''
+    房源资讯信息
+    '''
+    # 资讯连接
+    item_url = Field()
+    # 房源信息
+    newcode = Field()
+    # 房源状态实体类型
+    item_type = Field()
+    # 资讯时间
+    info_date = Field()
+    # 资讯标题
+    info_title = Field()
+    # 资讯详情
+    info_detail = Field()
+
+
+class house_type_item(Item):
+    '''
+    房源户型信息
+    '''
+    newcode = Field()
+    # 户型连接
+    item_url = Field()
+    # 状态
+    item_type = Field()
+    # 户型名称
+    house_type_name = Field()
+    # 户型地址
+    # house_type_url = Field()
+    # 室
+    house_type_room_cnt = Field()
+    # 厅
+    house_type_hall_cnt = Field()
+    # 厨
+    house_type_kitchen_cnt = Field()
+    # 卫
+    house_type_toilet_cnt = Field()
+    # 建筑面积
+    house_type_size = Field()
+    # 实用面积
+    house_type_living_size = Field()
+    # 户型描述
+    house_type_desc = Field()
+    # 主力户型
+    house_type_ismain = Field()
+    # 总价
+    house_type_totalprice = Field()
+    # 户型状态
+    house_type_status = Field()
+    # houseimageurl
+    house_type_image_url = Field()
+
+
+class house_photo_item(Item):
+    '''
+    房源图片信息
+    '''
+    item_type = Field()
+    # 房源编码
+    newcode = Field()
+    # 图片连接
+    house_photo_url = Field()
+    # 图片类型
+    house_photo_type = Field()
+    # 图片标题
+    house_photo_title = Field()
