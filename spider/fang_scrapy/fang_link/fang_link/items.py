@@ -35,27 +35,6 @@ class fang_list_item(Item):
     show_price = Field()
 
 
-class fang_detail_item(Item):
-    # 实体类型&表名
-    item_type = Field()
-    # 唯一标识
-    item_url = Field()
-    # 房源详情页地址
-    house_detail_url = Field()
-    # 房源相册地址
-    house_image_url = Field()
-    # 房源动态地址
-    house_info_url = Field()
-    # 房源户型地址
-    house_type_url = Field()
-    # 房价
-    house_price_url = Field()
-    # 图片链接
-    img_list = Field()
-    # 房源标签
-    house_tag = Field()
-
-
 class house_detail_item(Item):
     # 房源编号
     newcode = Field()

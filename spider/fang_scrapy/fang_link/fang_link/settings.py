@@ -72,7 +72,8 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'fang_link.pipelines.MongoPipeline': 300,
+    'fang_link.pipelines.MysqlPipeline': 200
+    # 'fang_link.pipelines.MongoPipeline': 300
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

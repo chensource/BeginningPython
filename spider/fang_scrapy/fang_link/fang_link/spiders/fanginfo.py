@@ -4,7 +4,7 @@ import scrapy
 import re
 import logging
 import time
-from fang_link.items import fang_list_item, fang_detail_item, house_detail_item, house_info_item, house_type_item, house_photo_item
+from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item
 
 # 根据行政区列表爬取对应行政区所有成交房源
 
@@ -34,17 +34,20 @@ class FangInfoSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
-        for district in self.district_list:
-            url = self.xinfang_list_url + district + "/a77-b91/'"
-            # url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/a77-b91/'
-            yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
+        # for district in self.district_list:
+        #     url = self.xinfang_list_url + district + "/a77-b91/'"
+        #     yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
+
+        # 测试单页数据
+        url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/a77-b91/'
+        yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
 
     def parse_xinfang_list(self, response):
         '''
         售房新房列表数据抓取
         '''
-        listitem = fang_list_item()
-        listitem['item_type'] = 'house_list'
+        item = fang_list_item()
+        item['item_type'] = 'house_list'
         curPage = re.search(
             "<span class=\"ff3333\">&nbsp;(.*?)</span>/(.*?)&nbsp;", response.text, re.S).group(1)
 
@@ -59,19 +62,19 @@ class FangInfoSpider(scrapy.Spider):
             fang_url = house_li.css(
                 'div.nlcd_name a::attr(href)').extract_first()
             if fang_url:
-                listitem['item_url'] = fang_url.strip()
+                item['item_url'] = fang_url.strip()
 
             newcode = house_li.css('div.duibi::attr(onclick)').re('(\d+)')
 
             if newcode:
-                listitem['newcode'] = newcode[0]
+                item['newcode'] = newcode[0]
             else:
-                listitem['newcode'] = ''
+                item['newcode'] = ''
 
             # 楼盘名称 光谷万科中心
             name = house_li.css('div.nlcd_name a::text').extract_first()
             if name:
-                listitem['ad_name'] = name.strip()
+                item['ad_name'] = name.strip()
 
             # 房源地址信息
             relative_message = house_li.css('div.relative_message')
@@ -80,26 +83,26 @@ class FangInfoSpider(scrapy.Spider):
                 address = relative_message.css(
                     'div.address a::attr(title)').extract_first()
                 if address:
-                    listitem['address'] = address.strip()
+                    item['address'] = address.strip()
 
                 # 区域信息 东湖高新区
                 ad_area = relative_message.css(
                     'div.address a span.sngrey::text').extract_first()
                 if ad_area and ad_area.find('[') >= 0:
-                    listitem['ad_area'] = ad_area.strip()[1:-1]
+                    item['ad_area'] = ad_area.strip()[1:-1]
 
             # 房源状态 [在售][住宅][标签]
             fangyuan = house_li.css('div.fangyuan')
             if fangyuan:
                 # 销售状态
-                listitem['sales_status'] = fangyuan.css(
+                item['sales_status'] = fangyuan.css(
                     'span::text').extract_first().strip()
 
                 # 房源类型
-                listitem['property_category'] = fangyuan.css(
+                item['property_category'] = fangyuan.css(
                     'a::text').extract_first().strip()
                 # # 特色
-                # listitem['features'] = fangyuan.css(
+                # item['features'] = fangyuan.css(
                 #     'a::text')[1:-1].re(r'(\w+)')
 
             # 价格
@@ -107,14 +110,15 @@ class FangInfoSpider(scrapy.Spider):
                 'div.nhouse_price span::text').extract_first()
 
             if show_price:
-                listitem['show_price'] = show_price
+                item['show_price'] = show_price
             else:
-                listitem['show_price'] = '价格暂定'
+                item['show_price'] = '价格待定'
 
-            # 存储list数据
-            yield listitem
+            if item['newcode'] != "":
+                # 存储list数据
+                yield item
 
-            if fang_url and listitem['property_category'].find('住宅') >= 0:
+            if fang_url and item['property_category'].find('住宅') >= 0:
                 yield scrapy.Request(
                     url=fang_url, callback=self.parse_xinfang_data)
 
@@ -126,7 +130,6 @@ class FangInfoSpider(scrapy.Spider):
                 callback=self.parse_xinfang_list)
 
     def parse_xinfang_data(self, response):
-        detail_item = fang_detail_item()
         # 唯一标识
         newcode = response.xpath(
             '//span[@class="mobck"]/a/@href').re("(\d+)")[0]
@@ -137,26 +140,18 @@ class FangInfoSpider(scrapy.Spider):
             # 详细信息url
             house_detail_url = head.css(
                 'div.navleft a:contains("详")::attr(href)').extract_first()
-            if house_detail_url:
-                detail_item['house_detail_url'] = house_detail_url.strip()
 
             # 动态
             house_info_url = head.css(
                 'div.navleft a:contains("动态")::attr(href)').extract_first()
-            if house_info_url:
-                detail_item['house_info_url'] = house_info_url.strip()
 
             # 户型
             house_type_url = head.css(
                 'div.navleft a:contains("户型")::attr(href)').extract_first()
-            if house_type_url:
-                detail_item['house_type_url'] = house_type_url.strip()
 
             # 相册
             house_image_url = head.css(
                 'div.navleft a:contains("相册")::attr(href)').extract_first()
-            if house_image_url:
-                detail_item['house_image_url'] = house_image_url.strip()
 
             # 配套信息 （从wap站取）
             # house_peitao_url = "https://m.fang.com/map/xf/wuhan/{newcode}/peitao.htm".format(newcode=newcode
@@ -316,38 +311,38 @@ class FangInfoSpider(scrapy.Spider):
 
         #---------------------------------------- 周边设施 ---------------------------------------- #
 
-        other_info = response.css('ul.sheshi_zb li::text').extract()
-        if other_info:
-            # 交通
-            traffic = " ".join(other_info[0:3])
-            # 学校
-            school = other_info[3]
-            # 商场
-            mall = other_info[4]
-            # 医院
-            hospital = other_info[5]
-            # 银行
-            bank = other_info[6]
+        # other_info = response.css('ul.sheshi_zb li::text').extract()
+        # if other_info:
+        #     # 交通
+        #     traffic = " ".join(other_info[0:3])
+        #     # 学校
+        #     school = other_info[3]
+        #     # 商场
+        #     mall = other_info[4]
+        #     # 医院
+        #     hospital = other_info[5]
+        #     # 银行
+        #     bank = other_info[6]
 
-            if traffic:
-                item['traffic'] = traffic.strip()
-            else:
-                item['traffic'] = ''
+        #     if traffic:
+        #         item['traffic'] = traffic.strip()
+        #     else:
+        #         item['traffic'] = ''
 
-            if school:
-                item['school'] = school.strip()
-            else:
-                item['school'] = ''
+        #     if school:
+        #         item['school'] = school.strip()
+        #     else:
+        #         item['school'] = ''
 
-            if hospital:
-                item['hospital'] = hospital.strip()
-            else:
-                item['hospital'] = ''
+        #     if hospital:
+        #         item['hospital'] = hospital.strip()
+        #     else:
+        #         item['hospital'] = ''
 
-            if bank:
-                item['bank'] = bank.strip()
-            else:
-                item['bank'] = ''
+        #     if bank:
+        #         item['bank'] = bank.strip()
+        #     else:
+        #         item['bank'] = ''
 
         #---------------------------------------- 周边设施 ---------------------------------------- #
 
