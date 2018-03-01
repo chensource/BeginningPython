@@ -4,7 +4,7 @@ import scrapy
 import re
 import logging
 import time
-from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item
+from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item, house_price
 
 # 根据行政区列表爬取对应行政区所有成交房源
 
@@ -150,8 +150,8 @@ class FangInfoSpider(scrapy.Spider):
                 'div.navleft a:contains("户型")::attr(href)').extract_first()
 
             # 相册
-            house_image_url = head.css(
-                'div.navleft a:contains("相册")::attr(href)').extract_first()
+            # house_image_url = head.css(
+            #     'div.navleft a:contains("相册")::attr(href)').extract_first()
 
             # 配套信息 （从wap站取）
             # house_peitao_url = "https://m.fang.com/map/xf/wuhan/{newcode}/peitao.htm".format(newcode=newcode
@@ -163,9 +163,9 @@ class FangInfoSpider(scrapy.Spider):
             yield scrapy.Request(
                 url=house_detail_url, callback=self.parse_house_detail, meta={'newcode': newcode})
 
-        if house_info_url:
-            yield scrapy.Request(
-                url=house_info_url, callback=self.parse_house_info, meta={'newcode': newcode})
+        # if house_info_url:
+        #     yield scrapy.Request(
+        #         url=house_info_url, callback=self.parse_house_info, meta={'newcode': newcode})
 
         # if house_type_url:
         #     yield scrapy.Request(
@@ -344,6 +344,25 @@ class FangInfoSpider(scrapy.Spider):
         #     else:
         #         item['bank'] = ''
 
+        # 价格信息
+        trs = response.xpath(
+            "//div[@class='main-item']/h3/a[contains(string(),'价')]/following-sibling::*[1]/div/table/tbody/tr")
+        print(trs.extract())
+        item_price = house_price()
+        for tr in trs:
+            td_value = tr.xpath('td/text()')
+            time = td_value[0].split()
+            avg_price = td_value[1].split()
+            price_desc = td_value[3].split()
+
+            if avg_price != "" and avg_price != "均价":
+                item_price['item_type'] = 'house_price'
+                item_price['newcode'] = response.meta['newcode']
+                item_price['time'] = time
+                item_price['avg_price'] = avg_price
+                item_price['price_desc'] = price_desc
+                yield item_price
+
         #---------------------------------------- 周边设施 ---------------------------------------- #
 
         #---------------------------------------- 小区信息 ---------------------------------------- #
@@ -447,11 +466,17 @@ class FangInfoSpider(scrapy.Spider):
             房源动态信息 [取第一条]
         '''
         item = house_info_item()
-        item['item_url'] = response.url
         item['newcode'] = response.meta['newcode']
         item['item_type'] = 'house_info'
         info_date = response.xpath(
             '//div[@id="gushi_blog"]/ul/li[1]/div[1]/text()').extract_first()
+
+        item_url = response.xpath(
+            '//div[@id="gushi_blog"]/ul/li[1]/h2/a/@href').extract_first()
+        if item_url:
+            item['item_url'] = item_url.strip()
+        else:
+            item['item_url'] = ''
 
         if info_date:
             item['info_date'] = info_date.strip()
@@ -490,51 +515,57 @@ class FangInfoSpider(scrapy.Spider):
         '''
         item = house_type_item()
         results = json.loads(response.text)
-        houst_type_dict = results.get('thisPic')
-
-        if houst_type_dict:
+        house_type_dict = results.get('thisPic')
+        item['item_url'] = response.url
+        if house_type_dict:
             # 户型名称
             item['item_type'] = 'house_type'
             item['newcode'] = response.meta['newcode']
-            item['house_type_name'] = houst_type_dict['hx_title']
-            item['house_type_room_cnt'] = houst_type_dict['room']
-            item['house_type_hall_cnt'] = houst_type_dict['hall']
-            item['house_type_kitchen_cnt'] = houst_type_dict['kitchen']
-            item['house_type_toilet_cnt'] = houst_type_dict['toilet']
+            item['house_type_id'] = house_type_dict['id']
+            item['house_type_name'] = house_type_dict['hx_title']
+            item['house_type_room_cnt'] = house_type_dict['room']
+            item['house_type_hall_cnt'] = house_type_dict['hall']
+            item['house_type_kitchen_cnt'] = house_type_dict['kitchen']
+            item['house_type_toilet_cnt'] = house_type_dict['toilet']
             # 建筑面积
-            item['house_type_size'] = houst_type_dict['buildingarea']
-            # 实用面积
-            item['house_type_living_size'] = houst_type_dict['livingarea']
+            item['house_type_size'] = house_type_dict['buildingarea']
             # 户型描述
-            item['house_type_desc'] = houst_type_dict['hx_desp']
-            item['house_type_status'] = houst_type_dict['tags'][0]
-            item['house_type_totalprice'] = houst_type_dict['reference_price']
-            item['house_type_image_url'] = houst_type_dict['houseimageurl']
+            # item['house_type_desc'] = house_type_dict['hx_desp']
+            hx_desp = house_type_dict['hx_desp']
+            if hx_desp != "":
+                item['house_type_desc'] = hx_desp
+            else:
+                item['house_type_desc'] = '暂无'
+
+            item['house_type_status'] = house_type_dict['tags'][0]
+            item['house_type_image_url'] = house_type_dict['houseimageurl']
         yield item
 
-    def parse_house_photo_list(self, response):
-        '''
-            图片信息
-        '''
-        newcode = response.meta['newcode']
-        baseurl = response.url.split('/')[2]
-        types = ['900', '901', '903', '904', '905', '907']
-        for img_type in types:
-            house_photo_api = "http://{baseurl}/house/ajaxrequest/hxquanping_get.php?newcode={newcode}&type={types}&nowpicid=1000000&count=100".format(
-                baseurl=baseurl, newcode=newcode, types=img_type)
-            yield scrapy.Request(url=house_photo_api, callback=self.parse_house_photo_detail)
+    # def parse_house_photo_list(self, response):
+    #     '''
+    #         图片信息
+    #     '''
+    #     newcode = response.meta['newcode']
+    #     baseurl = response.url.split('/')[2]
+    #     types = ['901', '903', '904', '905', '907']
+    #     for img_type in types:
+    #         house_photo_api = "http://{baseurl}/house/ajaxrequest/hxquanping_get.php?newcode={newcode}&type={types}&nowpicid=1000000&count=100".format(
+    #             baseurl=baseurl, newcode=newcode, types=img_type)
+    #         yield scrapy.Request(url=house_photo_api, callback=self.parse_house_photo_detail)
 
-    def parse_house_photo_detail(self, response):
-        results = json.loads(response.text)
-        if results.get('resCode'):
-            pass
-        else:
-            list = results.get('list')
-            for obj in list:
-                item = house_photo_item()
-                item['newcode'] = obj['newcode']
-                item['item_type'] = 'house_photo'
-                item['house_photo_url'] = obj['url_b']
-                item['house_photo_type'] = obj['pictype']
-                item['house_photo_title'] = obj['title']
-            yield item
+    # def parse_house_photo_detail(self, response):
+    #     results = json.loads(response.text)
+    #     if results.get('resCode'):
+    #         pass
+    #     else:
+    #         list = results.get('list')
+    #         for obj in list:
+    #             item = house_photo_item()
+    #             item['item_url'] = response.url
+    #             item['newcode'] = obj['newcode']
+    #             item['item_type'] = 'house_photo'
+    #             item['house_photo_url'] = obj['url']
+    #             item['house_photo_type'] = obj['pictype']
+    #             item['house_photo_id'] = obj['id']
+    #             item['house_photo_tag'] = obj['tag']
+    #         yield item

@@ -28,6 +28,7 @@ class MysqlPipeline:
         UpdateTime = time.strftime(
             '%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         if item_type == "house_list":
+            # 列表页的数据
             try:
                 # 查重处理
                 newcode = item['newcode']
@@ -78,6 +79,7 @@ class MysqlPipeline:
                 pass
             return item
         elif item_type == "house_detail":
+            # 详情页信息
             try:
                 newcode = item['newcode']
                 building_type = item['building_type']
@@ -132,7 +134,6 @@ class MysqlPipeline:
                         project_description=project_description,
                         UpdateTime=UpdateTime
                     )
-                    print(updatesql)
                     self.cursor.execute(updatesql)
                 else:
                     insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_type`, `item_url`, `building_type`, `building_features`, `decoration`, `property_years`, `loop_location`, `developer`, `opening_time`, `delivery_time`, `sales_address`, `land_area`, `build_area`, `volume_rate`, `greening_rate`, `parking_count`, `house_count`, `property_company`, `property_costs`, `property_costs_description`, `project_description`) VALUES ('{newcode}', '{item_type}', '{item_url}', '{building_type}', '{building_features}', '{decoration}', '{property_years}', '{loop_location}', '{developer}', '{opening_time}', '{delivery_time}', '{sales_address}', '{land_area}', '{build_area}', '{volume_rate}', '{greening_rate}', '{parking_count}', '{house_count}', '{property_company}', '{property_costs}', '{property_costs_description}', '{project_description}')".format(
@@ -160,7 +161,6 @@ class MysqlPipeline:
                         property_costs_description=property_costs_description,
                         project_description=project_description
                     )
-                    print(insertsql)
                     self.cursor.execute(insertsql)
                     # 插入数据
                 self.conn.commit()
@@ -168,11 +168,158 @@ class MysqlPipeline:
                 # 出现错误时打印错误日志
                 pass
             return item
-        elif item_type == "":
-            pass
+        elif item_type == "house_info":
+            # 资讯信息
+            newcode = item['newcode']
+            info_date = item['info_date']
+            info_title = item['info_title']
+            info_detail = item['info_detail']
+
+            try:
+                selectStr = "select * from `{table_name}` where item_url = '{item_url}'".format(
+                    table_name=collection_name, item_url=item_url)
+                self.cursor.execute(selectStr)
+                # 是否有重复数据
+                repetition = self.cursor.fetchone()
+                if repetition:
+                    pass
+                else:
+                    insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_url`, `item_type`, `info_date`, `info_title`, `info_detail`) VALUES ('{newcode}', '{item_url}', '{item_type}', '{info_date}', '{info_title}', '{info_detail}')".format(
+                        table_name=collection_name,
+                        newcode=newcode,
+                        item_url=item_url,
+                        item_type=item_type,
+                        info_date=info_date,
+                        info_title=info_title,
+                        info_detail=info_detail
+                    )
+                    self.cursor.execute(insertsql)
+                self.conn.commit()
+            except Exception as error:
+                pass
+            return item
+        elif item_type == "house_type":
+            newcode = item['newcode']
+            house_type_id = item['house_type_id']
+            house_type_name = item['house_type_name']
+            room_cnt = item['house_type_room_cnt']
+            hall_cnt = item['house_type_hall_cnt']
+            kitchen_cnt = item['house_type_kitchen_cnt']
+            toilet_cnt = item['house_type_toilet_cnt']
+            size = item['house_type_size']
+            desc = item['house_type_desc']
+            status = item['house_type_status']
+            image_url = item['house_type_image_url']
+            # 户型信息
+            try:
+                selectStr = "select * from `{table_name}` where house_type_id = '{house_type_id}'".format(
+                    table_name=collection_name,
+                    house_type_id=house_type_id
+                )
+                self.cursor.execute(selectStr)
+                # 是否有重复数据
+                repetition = self.cursor.fetchone()
+                if repetition:
+                    updatesql = "UPDATE `{table_name}` SET `name`='{name}', `room_cnt`='{room_cnt}', `hall_cnt`='{hall_cnt}', `kitchen_cnt`='{kitchen_cnt}', `toilet_cnt`='{toilet_cnt}', `size`='{size}', `desc`='{desc}', `status`='{status}', `image_url`='{image_url}' WHERE (`house_type_id`='{house_type_id}')".format(
+                        table_name=collection_name,
+                        house_type_id=house_type_id,
+                        name=house_type_name,
+                        room_cnt=room_cnt,
+                        hall_cnt=hall_cnt,
+                        kitchen_cnt=kitchen_cnt,
+                        toilet_cnt=toilet_cnt,
+                        size=size,
+                        desc=desc,
+                        status=status,
+                        image_url=image_url
+                    )
+                    self.cursor.execute(updatesql)
+                else:
+                    insertsql = "INSERT INTO `{table_name}` (`house_type_id`, `newcode`, `item_type`, `item_url`, `name`, `room_cnt`, `hall_cnt`, `kitchen_cnt`, `toilet_cnt`, `size`, `desc`, `status`, `image_url`) VALUES('{house_type_id}', '{newcode}', '{item_type}', '{item_url}', '{name}', '{room_cnt}', '{hall_cnt}', '{kitchen_cnt}', '{toilet_cnt}', '{size}', '{desc}', '{status}', '{image_url}')".format(
+                        table_name=collection_name,
+                        house_type_id=house_type_id,
+                        newcode=newcode,
+                        item_type=item_type,
+                        item_url=item_url,
+                        name=house_type_name,
+                        room_cnt=room_cnt,
+                        hall_cnt=hall_cnt,
+                        kitchen_cnt=kitchen_cnt,
+                        toilet_cnt=toilet_cnt,
+                        size=size,
+                        desc=desc,
+                        status=status,
+                        image_url=image_url
+                    )
+                    self.cursor.execute(insertsql)
+                self.conn.commit()
+            except Exception as error:
+                pass
+            return item
+        # elif item_type == "house_type":
+        #     try:
+        #         photo_id = item['house_photo_id']
+        #         newcode = item['newcode']
+        #         photo_url = item['house_photo_url']
+        #         photo_type = item['house_photo_type']
+        #         photo_tag = item['house_photo_tag']
+        #         selectStr = "select * from `{table_name}` where photo_id = '{photo_id}'".format(
+        #             table_name=collection_name,
+        #             photo_id=photo_id
+        #         )
+        #         self.cursor.execute(selectStr)
+        #         # 是否有重复数据
+        #         repetition = self.cursor.fetchone()
+        #         if repetition:
+        #             pass
+        #             # 更新数据
+        #         else:
+        #             # 添加数据
+        #             insertsql = "INSERT INTO `{table_name}` (`photo_id`, `newcode`, `item_type`, `item_url`, `photo_tag`, `photo_url`, `photo_type`) VALUES ('{photo_id}', '{newcode}', '{item_type}', '{item_url}','{photo_tag}', '{photo_url}', '{photo_type}')".format(
+        #                 table_name=collection_name,
+        #                 photo_id=photo_id,
+        #                 newcode=newcode,
+        #                 item_type=item_type,
+        #                 item_url=item_url,
+        #                 photo_url=photo_url,
+        #                 photo_type=photo_type,
+        #                 photo_tag=photo_tag
+        #             )
+        #             self.cursor.execute(insertsql)
+        #         self.conn.commit()
+        #     except Exception as error:
+        #         pass
         else:
-            pass
-        newcode = item['newcode']
+            try:
+                newcode = item['newcode']
+                price_time = item['time']
+                avg_price = item['avg_price']
+                price_desc = item['price_desc']
+
+                selectStr = "select * from `{table_name}` where price_time = '{price_time}' AND avg_price = {avg_price}".format(
+                    table_name=collection_name,
+                    price_time=price_time,
+                    avg_price=avg_price
+                )
+                self.cursor.execute(selectStr)
+                # 是否有重复数据
+                repetition = self.cursor.fetchone()
+
+                if repetition:
+                    pass
+                else:
+                    insertsql = "INSERT INTO `{table_name}` (`item_type`, `newcode`, `price_time`, `price_avg`, `price_desc`) VALUES ('{item_type}','{newcode}', '{price_time}', '{price_avg}', '{price_desc}')".format(
+                        table_name=collection_name,
+                        item_type=item_type,
+                        newcode=newcode,
+                        price_time=price_time,
+                        price_avg=avg_price,
+                        price_desc=price_desc
+                    )
+                    self.cursor.execute(insertsql)
+                self.conn.commit()
+            except Exception as error:
+                pass
 
     def close_spider(self, spider):
         self.cursor.close()

@@ -114,12 +114,12 @@ class house_info_item(Item):
     '''
     房源资讯信息
     '''
+    # 房源状态实体类型
+    item_type = Field()
     # 资讯连接
     item_url = Field()
     # 房源信息
     newcode = Field()
-    # 房源状态实体类型
-    item_type = Field()
     # 资讯时间
     info_date = Field()
     # 资讯标题
@@ -132,6 +132,8 @@ class house_type_item(Item):
     '''
     房源户型信息
     '''
+    # 户型id
+    house_type_id = Field()
     newcode = Field()
     # 户型连接
     item_url = Field()
@@ -170,11 +172,26 @@ class house_photo_item(Item):
     房源图片信息
     '''
     item_type = Field()
+    item_url = Field()
     # 房源编码
     newcode = Field()
+    house_photo_id = Field()
     # 图片连接
     house_photo_url = Field()
     # 图片类型
     house_photo_type = Field()
     # 图片标题
     house_photo_title = Field()
+    # 房源标签
+    house_photo_tag = Field()
+
+
+class house_price(Item):
+    item_type = Field()
+    item_url = Field()
+    newcode = Field()
+
+    # time
+    time = Field()
+    avg_price = Field()
+    price_desc = Field()
