@@ -186,6 +186,7 @@ class house_photo_item(Item):
     house_photo_tag = Field()
 
 
+# 价格
 class house_price(Item):
     item_type = Field()
     item_url = Field()
@@ -195,3 +196,14 @@ class house_price(Item):
     time = Field()
     avg_price = Field()
     price_desc = Field()
+
+
+# 预售许可证
+class house_permit(Item):
+    item_type = Field()
+    item_url = Field()
+    newcode = Field()
+
+    permit_no = Field()
+    permit_time = Field()
+    permit_desc = Field()

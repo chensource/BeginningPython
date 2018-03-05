@@ -289,17 +289,18 @@ class MysqlPipeline:
         #         self.conn.commit()
         #     except Exception as error:
         #         pass
-        else:
+        elif item_type == "house_price":
             try:
                 newcode = item['newcode']
                 price_time = item['time']
                 avg_price = item['avg_price']
                 price_desc = item['price_desc']
 
-                selectStr = "select * from `{table_name}` where price_time = '{price_time}' AND avg_price = {avg_price}".format(
+                selectStr = "select * from `{table_name}` where `price_time` = '{price_time}' AND `price_avg` = '{avg_price}' AND `newcode` = '{newcode}' ".format(
                     table_name=collection_name,
                     price_time=price_time,
-                    avg_price=avg_price
+                    avg_price=avg_price,
+                    newcode=newcode
                 )
                 self.cursor.execute(selectStr)
                 # 是否有重复数据
@@ -315,6 +316,38 @@ class MysqlPipeline:
                         price_time=price_time,
                         price_avg=avg_price,
                         price_desc=price_desc
+                    )
+                    self.cursor.execute(insertsql)
+                self.conn.commit()
+            except Exception as error:
+                pass
+        else:
+            try:
+                newcode = item['newcode']
+                permit_no = item['permit_no']
+                permit_time = item['permit_time']
+                permit_desc = item['permit_desc']
+
+                selectStr = "select * from `{table_name}` where `permit_no` = '{permit_no}' AND `permit_time` = '{permit_time}' AND `newcode` = '{newcode}' ".format(
+                    table_name=collection_name,
+                    permit_no=permit_no,
+                    permit_time=permit_time,
+                    newcode=newcode
+                )
+                self.cursor.execute(selectStr)
+                # 是否有重复数据
+                repetition = self.cursor.fetchone()
+
+                if repetition:
+                    pass
+                else:
+                    insertsql = "INSERT INTO `{table_name}` (`item_type`, `newcode`, `permit_no`, `permit_time`, `permit_desc`) VALUES ('{item_type}', '{newcode}', '{permit_no}', '{permit_time}', '{permit_desc}')".format(
+                        table_name=collection_name,
+                        item_type=item_type,
+                        newcode=newcode,
+                        permit_no=permit_no,
+                        permit_time=permit_time,
+                        permit_desc=permit_desc
                     )
                     self.cursor.execute(insertsql)
                 self.conn.commit()

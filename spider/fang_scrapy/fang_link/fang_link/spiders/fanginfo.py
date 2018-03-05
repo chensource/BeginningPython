@@ -4,7 +4,7 @@ import scrapy
 import re
 import logging
 import time
-from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item, house_price
+from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item, house_price, house_permit
 
 # 根据行政区列表爬取对应行政区所有成交房源
 
@@ -346,24 +346,45 @@ class FangInfoSpider(scrapy.Spider):
 
         # 价格信息
         trs = response.xpath(
-            "//div[@class='main-item']/h3/a[contains(string(),'价')]/following-sibling::*[1]/div/table/tbody/tr")
-        print(trs.extract())
-        item_price = house_price()
-        for tr in trs:
-            td_value = tr.xpath('td/text()')
-            time = td_value[0].split()
-            avg_price = td_value[1].split()
-            price_desc = td_value[3].split()
+            "//div[@class='main-item']/h3[contains(string(),'价格信息')]/following-sibling::*[1]/div/table/tr")
 
-            if avg_price != "" and avg_price != "均价":
-                item_price['item_type'] = 'house_price'
-                item_price['newcode'] = response.meta['newcode']
-                item_price['time'] = time
-                item_price['avg_price'] = avg_price
-                item_price['price_desc'] = price_desc
-                yield item_price
+        if trs:
+            item_price = house_price()
+            for tr in trs:
+                td_value = tr.xpath('td/text()').extract()
+                time = td_value[0].strip()
+                avg_price = re.findall(r"\d+\.?\d*", td_value[1].strip())
+                price_desc = td_value[3].strip()
+                if avg_price and avg_price != "" and avg_price != "均价":
+                    item_price['item_url'] = response.url
+                    item_price['item_type'] = 'house_price'
+                    item_price['newcode'] = response.meta['newcode']
+                    item_price['time'] = time
+                    item_price['avg_price'] = avg_price[0]
+                    item_price['price_desc'] = price_desc
+                    yield item_price
 
         #---------------------------------------- 周边设施 ---------------------------------------- #
+
+        # 预售许可证
+        ys_trs = response.xpath(
+            "//td[contains(string(),'预售许可证')]/../following-sibling::*")
+
+        if ys_trs:
+            item_permit = house_permit()
+            for tr in ys_trs:
+                td_value = tr.xpath('td/text()').extract()
+                permit_no = td_value[0].strip()
+                permit_time = td_value[1].strip()
+                permit_desc = td_value[2].strip()
+                if permit_no and permit_no != "" and permit_no != "预售许可证" and permit_no.find('武') >= 0:
+                    item_permit['item_url'] = response.url
+                    item_permit['item_type'] = 'house_permit'
+                    item_permit['newcode'] = response.meta['newcode']
+                    item_permit['permit_no'] = permit_no
+                    item_permit['permit_time'] = permit_time
+                    item_permit['permit_desc'] = permit_desc
+                    yield item_permit
 
         #---------------------------------------- 小区信息 ---------------------------------------- #
         # 占地面积
