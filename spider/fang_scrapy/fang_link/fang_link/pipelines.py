@@ -19,13 +19,13 @@ class MysqlPipeline:
             user='root',
             password='P@ssw0rdWh',
             database='fang_db')
-        self.cursor = self.conn.cursor()
+        self.cursor = self.conn.cursor(dictionary=True)
 
     def process_item(self, item, spider):
         collection_name = item['item_type']
         item_url = item['item_url']
         item_type = item['item_type']
-        UpdateTime = time.strftime(
+        current_time = time.strftime(
             '%Y-%m-%d %H:%M:%S', time.localtime(time.time()))
         if item_type == "house_list":
             # 列表页的数据
@@ -37,6 +37,7 @@ class MysqlPipeline:
                 self.cursor.execute(selectStr)
                 # 是否有重复数据
                 repetition = self.cursor.fetchone()
+
                 ad_name = item['ad_name']
                 address = item['address']
                 ad_area = item['ad_area']
@@ -45,19 +46,20 @@ class MysqlPipeline:
                 show_price = item['show_price']
                 # 重复
                 if repetition:
-                    updatesql = "UPDATE `{table_name}` SET `item_url`='{item_url}',`item_type`= '{item_type}',`ad_name`= '{ad_name}',`address`= '{address}',`ad_area`= '{ad_area}',`sales_status`= '{sales_status}',`property_category`= '{property_category}',`show_price`= '{show_price}' WHERE (`newcode`='{newcode}') ".format(
-                        table_name=collection_name,
-                        item_url=item_url,
-                        item_type=item_type,
-                        ad_name=ad_name,
-                        address=address,
-                        ad_area=ad_area,
-                        sales_status=sales_status,
-                        property_category=property_category,
-                        show_price=show_price,
-                        newcode=newcode
-                    )
-                    self.cursor.execute(updatesql)
+                    if (repetition['show_price'] != show_price) or (repetition['sales_status'] != sales_status) or (repetition['address'] != address):
+                        updatesql = "UPDATE `{table_name}` SET `address`= '{address}',`sales_status`= '{sales_status}',`show_price`= '{show_price}',`UpdateTime`='{UpdateTime}',`IsUpdate`= '{IsUpdate}' WHERE (`newcode`='{newcode}') ".format(
+                            table_name=collection_name,
+                            address=address,
+                            sales_status=sales_status,
+                            show_price=show_price,
+                            IsUpdate=1,
+                            UpdateTime=current_time,
+                            newcode=newcode
+                        )
+                        self.cursor.execute(updatesql)
+                    else:
+                        pass
+                    self.conn.commit()
                 else:
                     # 插入数据
                     insertsql = "INSERT INTO `{table_name}`(`newcode`, `item_url`, `item_type`, `ad_name`, `address`, `ad_area`, `sales_status`, `property_category`, `show_price`)VALUES('{newcode}', '{item_url}', '{item_type}', '{ad_name}', '{address}','{ad_area}', '{sales_status}', '{property_category}', '{show_price}')".format(
@@ -103,6 +105,12 @@ class MysqlPipeline:
                 property_costs_description = item['property_costs_description']
                 project_description = item['project_description']
 
+                school = item['school']
+                market = item['market']
+                hospital = item['hospital']
+                bank = item['bank']
+                traffic = item['traffic']
+
                 selectStr = "select * from `{table_name}` where newcode = '{newcode}'".format(
                     table_name=collection_name, newcode=newcode)
                 self.cursor.execute(selectStr)
@@ -110,7 +118,7 @@ class MysqlPipeline:
                 repetition = self.cursor.fetchone()
                 if repetition:
                     # 更新数据
-                    updatesql = "UPDATE `{table_name}` SET `item_url`='{item_url}', `building_type`='{building_type}', `building_features`='{building_features}', `decoration`='{decoration}', `property_years`='{property_years}', `loop_location`='{loop_location}', `developer`='{developer}', `opening_time`='{opening_time}', `delivery_time`='{delivery_time}', `sales_address`='{sales_address}', `land_area`='{land_area}', `build_area`='{build_area}', `volume_rate`='{volume_rate}', `greening_rate`='{greening_rate}', `parking_count`='{parking_count}',`house_count`='{house_count}', `property_company`='{property_company}', `property_costs`='{property_costs}', `project_description`='{project_description}',`UpdateTime`='{UpdateTime}' WHERE (`newcode`='{newcode}')".format(
+                    updatesql = "UPDATE `{table_name}` SET `item_url`='{item_url}', `building_type`='{building_type}', `building_features`='{building_features}', `decoration`='{decoration}', `property_years`='{property_years}', `loop_location`='{loop_location}', `developer`='{developer}', `opening_time`='{opening_time}', `delivery_time`='{delivery_time}', `sales_address`='{sales_address}', `land_area`='{land_area}', `build_area`='{build_area}', `volume_rate`='{volume_rate}', `greening_rate`='{greening_rate}', `parking_count`='{parking_count}',`house_count`='{house_count}', `property_company`='{property_company}', `property_costs`='{property_costs}', `project_description`='{project_description}',`school`='{school}',`market`='{market}',`hospital`='{hospital}',`bank`='{bank}',`traffic`='{traffic}',`UpdateTime`='{UpdateTime}' WHERE (`newcode`='{newcode}')".format(
                         table_name=collection_name,
                         newcode=newcode,
                         item_url=item_url,
@@ -131,12 +139,17 @@ class MysqlPipeline:
                         house_count=house_count,
                         property_company=property_company,
                         property_costs=property_costs,
+                        school=school,
+                        market=market,
+                        hospital=hospital,
+                        bank=bank,
+                        traffic=traffic,
                         project_description=project_description,
-                        UpdateTime=UpdateTime
+                        UpdateTime=current_time
                     )
                     self.cursor.execute(updatesql)
                 else:
-                    insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_type`, `item_url`, `building_type`, `building_features`, `decoration`, `property_years`, `loop_location`, `developer`, `opening_time`, `delivery_time`, `sales_address`, `land_area`, `build_area`, `volume_rate`, `greening_rate`, `parking_count`, `house_count`, `property_company`, `property_costs`, `property_costs_description`, `project_description`) VALUES ('{newcode}', '{item_type}', '{item_url}', '{building_type}', '{building_features}', '{decoration}', '{property_years}', '{loop_location}', '{developer}', '{opening_time}', '{delivery_time}', '{sales_address}', '{land_area}', '{build_area}', '{volume_rate}', '{greening_rate}', '{parking_count}', '{house_count}', '{property_company}', '{property_costs}', '{property_costs_description}', '{project_description}')".format(
+                    insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_type`, `item_url`, `building_type`, `building_features`, `decoration`, `property_years`, `loop_location`, `developer`, `opening_time`, `delivery_time`, `sales_address`, `land_area`, `build_area`, `volume_rate`, `greening_rate`, `parking_count`, `house_count`, `property_company`, `property_costs`, `property_costs_description`,`school`,`market`,`hospital`,`bank`,`traffic`, `project_description`) VALUES ('{newcode}', '{item_type}', '{item_url}', '{building_type}', '{building_features}', '{decoration}', '{property_years}', '{loop_location}', '{developer}', '{opening_time}', '{delivery_time}', '{sales_address}', '{land_area}', '{build_area}', '{volume_rate}', '{greening_rate}', '{parking_count}', '{house_count}', '{property_company}', '{property_costs}', '{property_costs_description}','{school}','{market}','{hospital}','{bank}','{traffic}', '{project_description}')".format(
                         table_name=collection_name,
                         newcode=newcode,
                         item_type=item_type,
@@ -159,6 +172,11 @@ class MysqlPipeline:
                         property_company=property_company,
                         property_costs=property_costs,
                         property_costs_description=property_costs_description,
+                        school=school,
+                        market=market,
+                        hospital=hospital,
+                        bank=bank,
+                        traffic=traffic,
                         project_description=project_description
                     )
                     self.cursor.execute(insertsql)

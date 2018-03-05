@@ -4,6 +4,8 @@ import scrapy
 import re
 import logging
 import time
+from urllib.parse import quote
+import urllib
 from fang_link.items import fang_list_item, house_detail_item, house_info_item, house_type_item, house_photo_item, house_price, house_permit
 
 # 根据行政区列表爬取对应行政区所有成交房源
@@ -101,9 +103,6 @@ class FangInfoSpider(scrapy.Spider):
                 # 房源类型
                 item['property_category'] = fangyuan.css(
                     'a::text').extract_first().strip()
-                # # 特色
-                # item['features'] = fangyuan.css(
-                #     'a::text')[1:-1].re(r'(\w+)')
 
             # 价格
             show_price = house_li.css(
@@ -118,9 +117,9 @@ class FangInfoSpider(scrapy.Spider):
                 # 存储list数据
                 yield item
 
-            if fang_url and item['property_category'].find('住宅') >= 0:
-                yield scrapy.Request(
-                    url=fang_url, callback=self.parse_xinfang_data)
+            # if fang_url and item['property_category'].find('住宅') >= 0:
+            #     yield scrapy.Request(
+            #         url=fang_url, callback=self.parse_xinfang_data)
 
         # 下一页翻页
         if curPage != totalPage:
@@ -153,10 +152,6 @@ class FangInfoSpider(scrapy.Spider):
             # house_image_url = head.css(
             #     'div.navleft a:contains("相册")::attr(href)').extract_first()
 
-            # 配套信息 （从wap站取）
-            # house_peitao_url = "https://m.fang.com/map/xf/wuhan/{newcode}/peitao.htm".format(newcode=newcode
-            #                                                                                  )
-
         # yield detail_item
 
         if house_detail_url:
@@ -174,9 +169,6 @@ class FangInfoSpider(scrapy.Spider):
         # if house_image_url:
         #     yield scrapy.Request(
         #         url=house_image_url, callback=self.parse_house_photo_list, meta={'newcode': newcode})
-
-        # if house_peitao_url:
-        #     yield scrapy.Request(url=house_peitao_url, callback=self.parse_house_peitao, meta={'newcode': newcode})
 
     # def parse_house_peitao(self, response):
     #     # 配套信息
@@ -302,6 +294,15 @@ class FangInfoSpider(scrapy.Spider):
 
         if sales_address:
             item['sales_address'] = sales_address.strip()
+            url = 'http://api.map.baidu.com/geocoder/v2/'
+            output = 'json'
+            ak = 'EB3b1bbf5514cfae6b1335e72c00dec0'
+            add = quote(sales_address.strip())  # 由于本文城市变量为中文，为防止乱码，先用quote进行编码
+            uri = url + '?' + 'address=' + add + '&output=' + \
+                output + '&ak=' + ak
+            req = urllib.request.urlopen(uri)
+            res = req.read().decode()  # 将其他编码的字符串解码成unicode
+            temp = json.loads(res)  # 对json数据进行解析
         else:
             item['sales_address'] = ''
 
@@ -311,38 +312,40 @@ class FangInfoSpider(scrapy.Spider):
 
         #---------------------------------------- 周边设施 ---------------------------------------- #
 
-        # other_info = response.css('ul.sheshi_zb li::text').extract()
-        # if other_info:
-        #     # 交通
-        #     traffic = " ".join(other_info[0:3])
-        #     # 学校
-        #     school = other_info[3]
-        #     # 商场
-        #     mall = other_info[4]
-        #     # 医院
-        #     hospital = other_info[5]
-        #     # 银行
-        #     bank = other_info[6]
+        # 交通
+        traffic = response.xpath("//span[contains(text(),'交通')]/../text()")
+        if traffic:
+            item['traffic'] = ' '.join(traffic.extract()).strip()
 
-        #     if traffic:
-        #         item['traffic'] = traffic.strip()
-        #     else:
-        #         item['traffic'] = ''
+        # 学校
+        schoolStr = ''
+        kindergarten = response.xpath(
+            "//span[contains(text(),'幼儿园')]/../text()")
+        if kindergarten:
+            schoolStr += '幼儿园:' + ''.join(kindergarten.extract()).strip()
 
-        #     if school:
-        #         item['school'] = school.strip()
-        #     else:
-        #         item['school'] = ''
+        middle = response.xpath("//span[contains(text(),'中小学')]/../text()")
+        if middle:
+            schoolStr += '    中小学:' + ''.join(middle.extract()).strip()
 
-        #     if hospital:
-        #         item['hospital'] = hospital.strip()
-        #     else:
-        #         item['hospital'] = ''
+        university = response.xpath("//span[contains(text(),'大学')]/../text()")
+        if university:
+            schoolStr += '    大学:' + ''.join(university.extract()).strip()
 
-        #     if bank:
-        #         item['bank'] = bank.strip()
-        #     else:
-        #         item['bank'] = ''
+        if schoolStr != '':
+            item['school'] = schoolStr
+
+        market = response.xpath("//span[contains(text(),'商场')]/../text()")
+        if market:
+            item['market'] = ''.join(market.extract()).strip()
+
+        hospital = response.xpath("//span[contains(text(),'医院')]/../text()")
+        if hospital:
+            item['hospital'] = ''.join(hospital.extract()).strip()
+
+        bank = response.xpath("//span[contains(text(),'银行')]/../text()")
+        if bank:
+            item['bank'] = ''.join(bank.extract()).strip()
 
         # 价格信息
         trs = response.xpath(
@@ -561,6 +564,17 @@ class FangInfoSpider(scrapy.Spider):
             item['house_type_status'] = house_type_dict['tags'][0]
             item['house_type_image_url'] = house_type_dict['houseimageurl']
         yield item
+
+    # def getlnglat(address):
+    #     url = 'http://api.map.baidu.com/geocoder/v2/'
+    #     output = 'json'
+    #     ak = '你申请的密钥***'
+    #     add = address  # 由于本文城市变量为中文，为防止乱码，先用quote进行编码
+    #     uri = url + '?' + 'address=' + add + '&output=' + output + '&ak=' + ak
+    #     req = urlopen(uri)
+    #     res = req.read().decode()  # 将其他编码的字符串解码成unicode
+    #     temp = json.loads(res)  # 对json数据进行解析
+    #     return temp
 
     # def parse_house_photo_list(self, response):
     #     '''

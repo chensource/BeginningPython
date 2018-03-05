@@ -65,17 +65,7 @@ class house_detail_item(Item):
     # 售楼地址
     sales_address = Field()
     # 预售许可证
-    presale_permit = Field()
-    # 周边设施_交通
-    traffic = Field()
-    # 周边设施_学校
-    school = Field()
-    # 周边设施_商场
-    mall = Field()
-    # 周边设施_医院
-    hospital = Field()
-    # 周边设施_银行
-    bank = Field()
+    # presale_permit = Field()
     # 占地面积
     land_area = Field()
     # 建筑面积
@@ -108,6 +98,19 @@ class house_detail_item(Item):
     price_description = Field()
     # 项目简介
     project_description = Field()
+
+    # 周边设施_学校
+    school = Field()
+    # 周边设施_商场
+    market = Field()
+    # 周边设施_医院
+    hospital = Field()
+    # 周边设施_银行
+    bank = Field()
+    # 其他
+    other = Field()
+    # 周边设施_交通
+    traffic = Field()
 
 
 class house_info_item(Item):
