@@ -36,13 +36,13 @@ class FangInfoSpider(scrapy.Spider):
     ]
 
     def start_requests(self):
-        # for district in self.district_list:
-        #     url = self.xinfang_list_url + district + "/a77-b91/'"
-        #     yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
+        for district in self.district_list:
+            url = self.xinfang_list_url + district + "/a77-b91/'"
+            yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
 
         # 测试单页数据
-        url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/a77-b91/'
-        yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
+        # url = 'http://newhouse.wuhan.fang.com/house/s/donghugaoxin1/a77-b91/'
+        # yield scrapy.Request(url=url, callback=self.parse_xinfang_list)
 
     def parse_xinfang_list(self, response):
         '''

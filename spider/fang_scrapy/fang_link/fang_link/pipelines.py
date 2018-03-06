@@ -62,7 +62,7 @@ class MysqlPipeline:
                     self.conn.commit()
                 else:
                     # 插入数据
-                    insertsql = "INSERT INTO `{table_name}`(`newcode`, `item_url`, `item_type`, `ad_name`, `address`, `ad_area`, `sales_status`, `property_category`, `show_price`)VALUES('{newcode}', '{item_url}', '{item_type}', '{ad_name}', '{address}','{ad_area}', '{sales_status}', '{property_category}', '{show_price}')".format(
+                    insertsql = "INSERT INTO `{table_name}`(`newcode`, `item_url`, `item_type`, `ad_name`, `address`, `ad_area`, `sales_status`, `property_category`, `show_price`,`CreateTime`,`UpdateTime`)VALUES('{newcode}', '{item_url}', '{item_type}', '{ad_name}', '{address}','{ad_area}', '{sales_status}', '{property_category}', '{show_price}','{CreateTime}','{UpdateTime}')".format(
                         table_name=collection_name,
                         newcode=newcode,
                         item_url=item_url,
@@ -72,7 +72,10 @@ class MysqlPipeline:
                         ad_area=ad_area,
                         sales_status=sales_status,
                         property_category=property_category,
-                        show_price=show_price)
+                        show_price=show_price,
+                        CreateTime=current_time,
+                        UpdateTime=current_time
+                    )
                     self.cursor.execute(insertsql)
                 # 提交sql语句
                 self.conn.commit()
@@ -149,7 +152,7 @@ class MysqlPipeline:
                     )
                     self.cursor.execute(updatesql)
                 else:
-                    insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_type`, `item_url`, `building_type`, `building_features`, `decoration`, `property_years`, `loop_location`, `developer`, `opening_time`, `delivery_time`, `sales_address`, `land_area`, `build_area`, `volume_rate`, `greening_rate`, `parking_count`, `house_count`, `property_company`, `property_costs`, `property_costs_description`,`school`,`market`,`hospital`,`bank`,`traffic`, `project_description`) VALUES ('{newcode}', '{item_type}', '{item_url}', '{building_type}', '{building_features}', '{decoration}', '{property_years}', '{loop_location}', '{developer}', '{opening_time}', '{delivery_time}', '{sales_address}', '{land_area}', '{build_area}', '{volume_rate}', '{greening_rate}', '{parking_count}', '{house_count}', '{property_company}', '{property_costs}', '{property_costs_description}','{school}','{market}','{hospital}','{bank}','{traffic}', '{project_description}')".format(
+                    insertsql = "INSERT INTO `{table_name}` (`newcode`, `item_type`, `item_url`, `building_type`, `building_features`, `decoration`, `property_years`, `loop_location`, `developer`, `opening_time`, `delivery_time`, `sales_address`, `land_area`, `build_area`, `volume_rate`, `greening_rate`, `parking_count`, `house_count`, `property_company`, `property_costs`, `property_costs_description`,`school`,`market`,`hospital`,`bank`,`traffic`,`CreateTime`,`UpdateTime`, `project_description`) VALUES ('{newcode}', '{item_type}', '{item_url}', '{building_type}', '{building_features}', '{decoration}', '{property_years}', '{loop_location}', '{developer}', '{opening_time}', '{delivery_time}', '{sales_address}', '{land_area}', '{build_area}', '{volume_rate}', '{greening_rate}', '{parking_count}', '{house_count}', '{property_company}', '{property_costs}', '{property_costs_description}','{school}','{market}','{hospital}','{bank}','{traffic}','{CreateTime}','{UpdateTime}', '{project_description}')".format(
                         table_name=collection_name,
                         newcode=newcode,
                         item_type=item_type,
@@ -177,6 +180,8 @@ class MysqlPipeline:
                         hospital=hospital,
                         bank=bank,
                         traffic=traffic,
+                        CreateTime=current_time,
+                        UpdateTime=current_time,
                         project_description=project_description
                     )
                     self.cursor.execute(insertsql)
